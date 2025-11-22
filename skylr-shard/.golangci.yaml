@@ -1,0 +1,33 @@
+version: "2"
+
+run:
+  timeout: 1m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - goconst
+    - gosec
+    - govet
+    - ineffassign
+    - staticcheck
+    - revive
+    - paralleltest
+    - unused
+  exclusions:
+    rules:
+      - linters:
+          - revive
+        text: "should have a package comment"
+      - linters:
+          - revive
+        text: "don't use an underscore in package name"
+
+formatters:
+  enable:
+    - goimports
+    - gofmt
+
+issues:
