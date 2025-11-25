@@ -1,19 +1,42 @@
 package storage
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
-// Storage - интерфейс хранилища
-type Storage interface {
-	// GetString возвращает строку по ключу k
-	GetString(ctx context.Context, k string) (string, error)
-	// SetString устанавливает строку v в соответствие ключу k
-	SetString(ctx context.Context, k, v string) error
-	// GetInt64 возвращает int64 по ключу k
-	GetInt64(ctx context.Context, k string) (int64, error)
-	// SetInt64 устанавливает int64 v в соответствие ключу k
-	SetInt64(ctx context.Context, k string, v int64) error
-	// GetFloat64 возвращает float64 по ключу k
-	GetFloat64(ctx context.Context, k string) (float64, error)
-	// SetFloat64 устанавливает float64 v в соответствие ключу k
-	SetFloat64(ctx context.Context, k string, v float64) error
+// Storable - set of types, that can be stored as values in the storage
+type Storable interface {
+	string | int32 | int64 | float32 | float64
 }
+
+// Storage - abstraction over key-value storage
+type Storage[T Storable] interface {
+	// Get returns value by key k from the storage
+	Get(ctx context.Context, k string) (*T, error)
+	// Set creates/updates key-value pair in the storage
+	Set(ctx context.Context, k string, v T) error
+	// Size returns the amount of key-value pairs in the storage
+	Size(ctx context.Context) (int, error)
+}
+
+// EvictionPolicy - policy, which determines which keys should be evicted from the storage
+type EvictionPolicy int
+
+const (
+	// NoEviction - eviction turned off
+	NoEviction EvictionPolicy = iota
+	// LRU - Least Recently Used policy
+	LRU
+	// LFU - Least Frequently Used policy
+	LFU
+	// Random - evict random keys
+	Random
+)
+
+var (
+	// ErrNotFound - error, which signifies that provided key was not found in the storage
+	ErrNotFound = errors.New("not found")
+	// ErrCtxDone - error, which signifies that provided ctx was done
+	ErrCtxDone = errors.New("ctx is done")
+)
