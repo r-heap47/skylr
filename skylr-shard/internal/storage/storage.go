@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 // Storable - set of types, that can be stored as values in the storage
@@ -12,12 +13,20 @@ type Storable interface {
 
 // Storage - abstraction over key-value storage
 type Storage[T Storable] interface {
-	// Get returns value by key k from the storage
-	Get(ctx context.Context, k string) (*T, error)
+	// Get returns entry by key k from the storage
+	Get(ctx context.Context, k string) (*Entry[T], error)
 	// Set creates/updates key-value pair in the storage
-	Set(ctx context.Context, k string, v T) error
+	Set(ctx context.Context, e Entry[T]) error
 	// Size returns the amount of key-value pairs in the storage
 	Size(ctx context.Context) (int, error)
+}
+
+// Entry - key-value pair with additional data
+type Entry[T Storable] struct {
+	K string
+	V T
+	// expiration time
+	Exp time.Time
 }
 
 // EvictionPolicy - policy, which determines which keys should be evicted from the storage

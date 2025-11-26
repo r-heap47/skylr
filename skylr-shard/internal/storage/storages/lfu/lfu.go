@@ -1,4 +1,4 @@
-package random
+package lfu
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
 )
 
-// New returns new random-eviction storage
+// New returns new LFU storage
 func New[T storage.Storable]() (storage.Storage[T], error) {
 	return nil, errors.New("not implemented")
 }

@@ -10,19 +10,19 @@ import (
 
 // noeviction - key-value storage without eviction
 type noeviction[T storage.Storable] struct {
-	store map[string]T
+	store map[string]storage.Entry[T]
 	mu    *sync.RWMutex
 }
 
 // New returns new noeviction storage
 func New[T storage.Storable]() (storage.Storage[T], error) {
 	return &noeviction[T]{
-		store: make(map[string]T),
+		store: make(map[string]storage.Entry[T]),
 		mu:    &sync.RWMutex{},
 	}, nil
 }
 
-func (s *noeviction[T]) Get(ctx context.Context, k string) (*T, error) {
+func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], error) {
 	if utils.CtxDone(ctx) {
 		return nil, storage.ErrCtxDone
 	}
@@ -38,7 +38,7 @@ func (s *noeviction[T]) Get(ctx context.Context, k string) (*T, error) {
 	return &v, nil
 }
 
-func (s *noeviction[T]) Set(ctx context.Context, k string, v T) error {
+func (s *noeviction[T]) Set(ctx context.Context, e storage.Entry[T]) error {
 	if utils.CtxDone(ctx) {
 		return storage.ErrCtxDone
 	}
@@ -46,7 +46,7 @@ func (s *noeviction[T]) Set(ctx context.Context, k string, v T) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.store[k] = v
+	s.store[e.K] = e
 
 	return nil
 }
