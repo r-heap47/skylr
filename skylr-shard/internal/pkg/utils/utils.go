@@ -16,5 +16,12 @@ func CtxDone(ctx context.Context) bool {
 	return false
 }
 
-// Provider provides value T
+// Provider - value provider for type T
 type Provider[T any] func(ctx context.Context) T
+
+// Const - constant value provider
+func Const[T any](v T) Provider[T] {
+	return func(_ context.Context) T {
+		return v
+	}
+}
