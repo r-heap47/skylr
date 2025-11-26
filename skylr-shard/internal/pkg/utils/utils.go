@@ -15,3 +15,6 @@ func CtxDone(ctx context.Context) bool {
 
 	return false
 }
+
+// Provider provides value T
+type Provider[T any] func(ctx context.Context) T
