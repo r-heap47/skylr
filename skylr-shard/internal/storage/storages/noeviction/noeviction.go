@@ -86,7 +86,7 @@ func (s *noeviction[T]) cleanup() {
 		case <-s.done:
 			return
 		default:
-			s.clean(s.curTime(nil))
+			s.clean()
 		}
 
 		// wait until next clean() invocation
@@ -95,7 +95,9 @@ func (s *noeviction[T]) cleanup() {
 }
 
 // clean deletes expired keys from storage
-func (s *noeviction[T]) clean(now time.Time) {
+func (s *noeviction[T]) clean() {
+	now := s.curTime(nil)
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
