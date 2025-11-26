@@ -32,7 +32,7 @@ jobs:
     - name: Test ${{ matrix.dir }}
       run: |
         cd "${{ matrix.dir }}"
-        go test -v ./...
+        make test
 
     - name: Lint ${{ matrix.dir }}
       run: |
