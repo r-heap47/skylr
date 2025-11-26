@@ -12,6 +12,9 @@ GOLANGCI_TAG ?= 2.6.2
 run:
 	go run cmd/main.go
 
+.PHONY: all
+all: test build lint
+
 .PHONY: test
 test: 
 	go test -v ./...
@@ -20,6 +23,7 @@ test:
 build:
 	go build -v ./...
 
+.PHONY: lint
 lint: .lint ## Запуск golangci-lint по всем файлам проекта
 
 .lint: install-lint

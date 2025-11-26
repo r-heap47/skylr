@@ -1,4 +1,4 @@
-package impl
+package noeviction
 
 import (
 	"context"
@@ -14,10 +14,10 @@ type noeviction[T storage.Storable] struct {
 	store map[string]storage.Entry[T]
 	mu    *sync.RWMutex
 
+	start, done <-chan struct{}
+
 	curTime utils.Provider[time.Time]
 	clnDur  utils.Provider[time.Duration] // cooldown between cleanups
-
-	start, done <-chan struct{}
 }
 
 // Config - noeviction storage config
@@ -29,7 +29,7 @@ type Config struct {
 
 // New returns new noeviction storage
 func New[T storage.Storable](cfg Config) (storage.Storage[T], error) {
-	new := &noeviction[T]{
+	noev := &noeviction[T]{
 		store:   make(map[string]storage.Entry[T]),
 		mu:      &sync.RWMutex{},
 		curTime: cfg.CurTime,
@@ -38,9 +38,9 @@ func New[T storage.Storable](cfg Config) (storage.Storage[T], error) {
 		start:   cfg.Start,
 	}
 
-	go new.cleanup()
+	go noev.cleanup()
 
-	return new, nil
+	return noev, nil
 }
 
 func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], error) {
@@ -51,17 +51,21 @@ func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], e
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	v, ok := s.store[k]
+	entry, ok := s.store[k]
 	if !ok {
 		return nil, storage.ErrNotFound
 	}
+	if now := s.curTime(ctx); now.After(entry.Exp) {
+		delete(s.store, k)
+		return nil, storage.ErrNotFound
+	}
 
-	return &v, nil
+	return &entry, nil
 }
 
-func (s *noeviction[T]) Set(ctx context.Context, e storage.Entry[T]) error {
+func (s *noeviction[T]) Set(ctx context.Context, e storage.Entry[T]) (*storage.Entry[T], error) {
 	if utils.CtxDone(ctx) {
-		return storage.ErrCtxDone
+		return nil, storage.ErrCtxDone
 	}
 
 	s.mu.Lock()
@@ -69,18 +73,7 @@ func (s *noeviction[T]) Set(ctx context.Context, e storage.Entry[T]) error {
 
 	s.store[e.K] = e
 
-	return nil
-}
-
-func (s *noeviction[T]) Size(ctx context.Context) (int, error) {
-	if utils.CtxDone(ctx) {
-		return 0, storage.ErrCtxDone
-	}
-
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	return len(s.store), nil
+	return &e, nil
 }
 
 // cleanup initializes cleaning process

@@ -16,9 +16,7 @@ type Storage[T Storable] interface {
 	// Get returns entry by key k from the storage
 	Get(ctx context.Context, k string) (*Entry[T], error)
 	// Set creates/updates key-value pair in the storage
-	Set(ctx context.Context, e Entry[T]) error
-	// Size returns the amount of key-value pairs in the storage
-	Size(ctx context.Context) (int, error)
+	Set(ctx context.Context, e Entry[T]) (*Entry[T], error)
 }
 
 // Entry - key-value pair with additional data
