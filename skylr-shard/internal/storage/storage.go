@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"time"
 )
 
@@ -39,11 +38,4 @@ const (
 	LFU
 	// Random - evict random keys
 	Random
-)
-
-var (
-	// ErrNotFound - error, which signifies that provided key was not found in the storage
-	ErrNotFound = errors.New("not found")
-	// ErrCtxDone - error, which signifies that provided ctx was done
-	ErrCtxDone = errors.New("ctx is done")
 )

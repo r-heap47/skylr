@@ -2,11 +2,12 @@ package noeviction
 
 import (
 	"context"
-	"errors"
+	stderrs "errors"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/errors"
 	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/testutils"
 	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/utils"
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
@@ -68,7 +69,7 @@ func TestSet(t *testing.T) {
 
 		stored, err := store.Set(ctx, entry)
 		require.Error(t, err)
-		require.ErrorIs(t, err, storage.ErrCtxDone)
+		require.ErrorIs(t, err, errors.ErrCtxDone)
 		require.Nil(t, stored)
 	})
 }
@@ -127,7 +128,7 @@ func TestGet(t *testing.T) {
 		got, err := store.Get(ctx, entry.K)
 		require.Nil(t, got)
 		require.Error(t, err)
-		require.ErrorIs(t, err, storage.ErrCtxDone)
+		require.ErrorIs(t, err, errors.ErrCtxDone)
 	})
 
 	t.Run("error: not found", func(t *testing.T) {
@@ -143,7 +144,7 @@ func TestGet(t *testing.T) {
 
 		got, err := store.Get(ctx, "k")
 		require.Error(t, err)
-		require.ErrorIs(t, err, storage.ErrNotFound)
+		require.ErrorIs(t, err, errors.ErrNotFound)
 		require.Nil(t, got)
 	})
 
@@ -172,7 +173,7 @@ func TestGet(t *testing.T) {
 
 		got, err := store.Get(ctx, entry.K)
 		require.Error(t, err)
-		require.ErrorIs(t, err, storage.ErrNotFound)
+		require.ErrorIs(t, err, errors.ErrNotFound)
 		require.Nil(t, got)
 	})
 }
@@ -233,7 +234,7 @@ func TestClean(t *testing.T) {
 			_, err := store.Get(ctx, el.K)
 			require.True(t, (err != nil) == wantErr)
 			if wantErr {
-				require.ErrorIs(t, err, storage.ErrNotFound)
+				require.ErrorIs(t, err, errors.ErrNotFound)
 			}
 		}
 	})
@@ -295,7 +296,7 @@ func TestCleanup(t *testing.T) {
 
 			for _, el := range entries {
 				_, err := store.Get(ctx, el.K)
-				if !errors.Is(err, storage.ErrNotFound) {
+				if !stderrs.Is(err, errors.ErrNotFound) {
 					return false
 				}
 			}

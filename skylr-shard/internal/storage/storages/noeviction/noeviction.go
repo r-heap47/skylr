@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/errors"
 	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/utils"
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
 )
@@ -45,7 +46,7 @@ func New[T storage.Storable](cfg Config) (storage.Storage[T], error) {
 
 func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], error) {
 	if utils.CtxDone(ctx) {
-		return nil, storage.ErrCtxDone
+		return nil, errors.ErrCtxDone
 	}
 
 	s.mu.RLock()
@@ -53,11 +54,11 @@ func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], e
 
 	entry, ok := s.store[k]
 	if !ok {
-		return nil, storage.ErrNotFound
+		return nil, errors.ErrNotFound
 	}
 	if now := s.curTime(ctx); now.After(entry.Exp) {
 		delete(s.store, k)
-		return nil, storage.ErrNotFound
+		return nil, errors.ErrNotFound
 	}
 
 	return &entry, nil
@@ -65,7 +66,7 @@ func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], e
 
 func (s *noeviction[T]) Set(ctx context.Context, e storage.Entry[T]) (*storage.Entry[T], error) {
 	if utils.CtxDone(ctx) {
-		return nil, storage.ErrCtxDone
+		return nil, errors.ErrCtxDone
 	}
 
 	s.mu.Lock()

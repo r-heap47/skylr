@@ -51,5 +51,6 @@ message Entry {
         double value_double = 6;
     }
     // ttl
+    // NOTE: ALWAYS nil when returned from Get
     google.protobuf.Duration ttl = 7;
 }
