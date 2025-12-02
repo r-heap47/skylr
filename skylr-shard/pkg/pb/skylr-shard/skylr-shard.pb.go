@@ -210,6 +210,7 @@ type Entry struct {
 	//	*Entry_ValueDouble
 	Value isEntry_Value `protobuf_oneof:"value"`
 	// ttl
+	// NOTE: ALWAYS nil when returned from Get
 	Ttl           *durationpb.Duration `protobuf:"bytes,7,opt,name=ttl,proto3" json:"ttl,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

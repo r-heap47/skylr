@@ -7,7 +7,11 @@ GOLANGCI_TAG ?= v2.6.2
 PROTOC_GEN_GO_GRPC_BIN := $(LOCAL_BIN)/protoc-gen-go-grpc
 PROTOC_GEN_GO_GRPC_TAG ?= latest
 
-PROTOC_GEN_GO_BIN := $(GO_BIN)/protoc-gen-go
+PROTOC_GEN_GO_BIN := $(LOCAL_BIN)/protoc-gen-go
+PROTOC_GEN_GO_TAG ?= latest
+
+PROTOC_GEN_GRPC_GATEWAY_BIN ?= $(LOCAL_BIN)/protoc-gen-grpc-gateway
+PROTOC_GEN_GRPC_GATEWAY_TAG ?= latest
 
 PROTOC_SRC := $(CURDIR)/api
 PROTOC_DST := $(CURDIR)/pkg/pb
@@ -33,12 +37,15 @@ pbgen:
 		-I=$(PROTOC_SRC) \
 		--plugin=protoc-gen-go=$(PROTOC_GEN_GO_BIN) \
 		--plugin=protoc-gen-go-grpc=$(PROTOC_GEN_GO_GRPC_BIN) \
+		--plugin=protoc-gen-grpc-gateway=$(PROTOC_GEN_GRPC_GATEWAY_BIN) \
 		--go_out=$(PROTOC_DST) \
 		--go-grpc_out=$(PROTOC_DST) \
+		--grpc-gateway_out=$(PROTOC_DST) \
+    	--grpc-gateway_opt generate_unbound_methods=true \
 		$(PROTOC_SRC)/skylr-shard.proto
 
 .PHONY: deps
-deps: install-lint install-grpc-go
+deps: install-lint install-protoc install-protoc-grpc install-grpc-gateway
 
 .PHONY: lint
 lint: .lint
@@ -60,13 +67,21 @@ else
 	$(info Golangci-lint is already installed to $(GOLANGCI_BIN))
 endif
 
-install-grpc-go: export GOBIN := $(LOCAL_BIN)
-install-grpc-go:
-ifeq ($(wildcard $(PROTOC_GEN_GO_GRPC_BIN)),)
-	$(info Installing grpc-go v$(PROTOC_GEN_GO_GRPC_TAG))
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(PROTOC_GEN_GO_GRPC_TAG)
-else
-	$(info Golangci-lint is already installed to $(PROTOC_GEN_GO_GRPC_BIN))
-endif
+install-protoc: export GOBIN := $(LOCAL_BIN)
+install-protoc:
+	$(info Installing protoc)
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@$(PROTOC_GEN_GO_TAG)
+
+install-protoc-grpc: export GOBIN := $(LOCAL_BIN)
+install-protoc-grpc:
+	$(info Installing protoc-grpc)
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(PROTOC_GEN_GO_GRPC_TAG) 
+
+install-grpc-gateway: export GOBIN := $(LOCAL_BIN)
+install-grpc-gateway:
+	$(info Installing grpc-gateway)
+	go install \
+		github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@$(PROTOC_GEN_GRPC_GATEWAY_TAG) \
+    	github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@$(PROTOC_GEN_GRPC_GATEWAY_TAG)
 
 

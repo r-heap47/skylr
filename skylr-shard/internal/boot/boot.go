@@ -80,10 +80,15 @@ func Run() error {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
 
+	_, port, err := net.SplitHostPort(lis.Addr().String())
+	if err != nil {
+		return fmt.Errorf("net.SplitHostPort: %w", err)
+	}
+
 	srv := grpc.NewServer()
 
 	go func() {
-		log.Println("[GRPC] grpc server is set up...")
+		log.Printf("[GRPC] grpc server is set up on port %s...\n", port)
 
 		pbshard.RegisterShardServer(srv, impl)
 		startCh <- struct{}{} // initializing storages within shard
@@ -98,8 +103,8 @@ func Run() error {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigChan
-	log.Println("[GRPC] grpc server shutdown...")
 
+	log.Println("[GRPC] grpc server shutdown...")
 	srv.GracefulStop()
 
 	return nil
