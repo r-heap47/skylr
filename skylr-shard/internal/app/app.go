@@ -9,5 +9,15 @@ import (
 type Implementation struct {
 	pbshard.UnimplementedShardServer
 
-	shard shard.Shard
+	shard *shard.Shard
+}
+
+type Config struct {
+	Shard *shard.Shard
+}
+
+func New(cfg Config) *Implementation {
+	return &Implementation{
+		shard: cfg.Shard,
+	}
 }

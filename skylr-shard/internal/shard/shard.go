@@ -4,8 +4,10 @@ import (
 	"context"
 	stderrs "errors"
 	"fmt"
+	"time"
 
 	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/errors"
+	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/utils"
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
 	pbshard "github.com/cutlery47/skylr/skylr-shard/pkg/pb/skylr-shard"
 
@@ -19,6 +21,29 @@ type Shard struct {
 	storageInt32   storage.Storage[int32]
 	storageFloat64 storage.Storage[float64]
 	storageFloat32 storage.Storage[float32]
+
+	curTime utils.Provider[time.Time]
+}
+
+type Config struct {
+	StorageStr     storage.Storage[string]
+	StorageInt64   storage.Storage[int64]
+	StorageInt32   storage.Storage[int32]
+	StorageFloat64 storage.Storage[float64]
+	StorageFloat32 storage.Storage[float32]
+
+	CurTime utils.Provider[time.Time]
+}
+
+func New(cfg Config) *Shard {
+	return &Shard{
+		storageStr:     cfg.StorageStr,
+		storageInt64:   cfg.StorageInt64,
+		storageInt32:   cfg.StorageInt32,
+		storageFloat64: cfg.StorageFloat64,
+		storageFloat32: cfg.StorageFloat32,
+		curTime:        cfg.CurTime,
+	}
 }
 
 // Get searches for entry in each storage by provided key
@@ -121,4 +146,50 @@ func (sh *Shard) Get(ctx context.Context, k string) (*pbshard.Entry, error) {
 	}
 
 	return &entry, nil
+}
+
+// Set uploads new entry to storage
+func (sh *Shard) Set(ctx context.Context, e *pbshard.Entry) error {
+	var (
+		err error
+		// calc expiration time
+		exp = sh.curTime(ctx).Add(e.Ttl.AsDuration())
+	)
+
+	switch val := e.Value.(type) {
+	case *pbshard.Entry_ValueStr:
+		_, err = sh.storageStr.Set(ctx, storage.Entry[string]{
+			K:   e.Key,
+			V:   val.ValueStr,
+			Exp: exp,
+		})
+	case *pbshard.Entry_ValueInt64:
+		_, err = sh.storageInt64.Set(ctx, storage.Entry[int64]{
+			K:   e.Key,
+			V:   val.ValueInt64,
+			Exp: exp,
+		})
+	case *pbshard.Entry_ValueInt32:
+		_, err = sh.storageInt32.Set(ctx, storage.Entry[int32]{
+			K:   e.Key,
+			V:   val.ValueInt32,
+			Exp: exp,
+		})
+	case *pbshard.Entry_ValueDouble:
+		_, err = sh.storageFloat64.Set(ctx, storage.Entry[float64]{
+			K:   e.Key,
+			V:   val.ValueDouble,
+			Exp: exp,
+		})
+	case *pbshard.Entry_ValueFloat:
+		_, err = sh.storageFloat32.Set(ctx, storage.Entry[float32]{
+			K:   e.Key,
+			V:   val.ValueFloat,
+			Exp: exp,
+		})
+	default:
+		return stderrs.New("couldn't determine value type")
+	}
+
+	return err
 }

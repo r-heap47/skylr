@@ -27,10 +27,9 @@ func TestSet(t *testing.T) {
 			ttl = 5 * time.Second
 		)
 
-		store, err := New[string](Config{
+		store := New[string](Config{
 			CurTime: utils.Const(now),
 		})
-		require.NoError(t, err)
 		require.NotNil(t, store)
 
 		entry := storage.Entry[string]{
@@ -54,8 +53,7 @@ func TestSet(t *testing.T) {
 			ttl         = 5 * time.Second
 		)
 
-		store, err := New[string](Config{})
-		require.NoError(t, err)
+		store := New[string](Config{})
 		require.NotNil(t, store)
 
 		entry := storage.Entry[string]{
@@ -86,10 +84,9 @@ func TestGet(t *testing.T) {
 			ttl = 5 * time.Second
 		)
 
-		store, err := New[string](Config{
+		store := New[string](Config{
 			CurTime: utils.Const(now),
 		})
-		require.NoError(t, err)
 		require.NotNil(t, store)
 
 		entry := storage.Entry[string]{
@@ -98,7 +95,7 @@ func TestGet(t *testing.T) {
 			Exp: now.Add(ttl),
 		}
 
-		_, err = store.Set(ctx, entry)
+		_, err := store.Set(ctx, entry)
 		require.NoError(t, err)
 
 		got, err := store.Get(ctx, entry.K)
@@ -114,8 +111,7 @@ func TestGet(t *testing.T) {
 			ctx, cancel = context.WithCancel(t.Context())
 		)
 
-		store, err := New[string](Config{})
-		require.NoError(t, err)
+		store := New[string](Config{})
 		require.NotNil(t, store)
 
 		entry := storage.Entry[string]{
@@ -138,8 +134,7 @@ func TestGet(t *testing.T) {
 			ctx = t.Context()
 		)
 
-		store, err := New[string](Config{})
-		require.NoError(t, err)
+		store := New[string](Config{})
 		require.NotNil(t, store)
 
 		got, err := store.Get(ctx, "k")
@@ -156,10 +151,9 @@ func TestGet(t *testing.T) {
 			exp = testutils.MustParseDate(t, "2025-01-01")
 		)
 
-		store, err := New[string](Config{
+		store := New[string](Config{
 			CurTime: utils.Const(exp.Add(time.Second)),
 		})
-		require.NoError(t, err)
 		require.NotNil(t, store)
 
 		entry := storage.Entry[string]{
@@ -168,7 +162,7 @@ func TestGet(t *testing.T) {
 			Exp: exp,
 		}
 
-		_, err = store.Set(ctx, entry)
+		_, err := store.Set(ctx, entry)
 		require.NoError(t, err)
 
 		got, err := store.Get(ctx, entry.K)
@@ -249,19 +243,17 @@ func TestCleanup(t *testing.T) {
 		var (
 			ctx = t.Context()
 
-			dur = 10 * time.Millisecond
-			now = lo.ToPtr(testutils.MustParseDate(t, "2025-01-01"))
+			timeout = 10 * time.Millisecond
+			now     = lo.ToPtr(testutils.MustParseDate(t, "2025-01-01"))
 
 			start = make(chan struct{})
-			done  = make(chan struct{})
 		)
 
 		store := &noeviction[string]{
-			store:  make(map[string]storage.Entry[string]),
-			mu:     &sync.RWMutex{},
-			start:  start,
-			done:   done,
-			clnDur: utils.Const(dur),
+			store:          make(map[string]storage.Entry[string]),
+			mu:             &sync.RWMutex{},
+			start:          start,
+			cleanupTimeout: utils.Const(timeout),
 			curTime: func(_ context.Context) time.Time {
 				return *now
 			},
@@ -276,7 +268,7 @@ func TestCleanup(t *testing.T) {
 		entry2 := storage.Entry[string]{
 			K:   "key2",
 			V:   "value",
-			Exp: now.Add(dur),
+			Exp: now.Add(timeout),
 		}
 
 		entries := []storage.Entry[string]{
@@ -292,7 +284,7 @@ func TestCleanup(t *testing.T) {
 		start <- struct{}{}
 
 		require.Eventually(t, func() bool {
-			*now = now.Add(dur)
+			*now = now.Add(timeout)
 
 			for _, el := range entries {
 				_, err := store.Get(ctx, el.K)
@@ -306,7 +298,5 @@ func TestCleanup(t *testing.T) {
 			1*time.Second,
 			10*time.Millisecond,
 		)
-
-		done <- struct{}{}
 	})
 }

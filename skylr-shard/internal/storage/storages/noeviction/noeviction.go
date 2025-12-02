@@ -15,33 +15,32 @@ type noeviction[T storage.Storable] struct {
 	store map[string]storage.Entry[T]
 	mu    *sync.RWMutex
 
-	start, done <-chan struct{}
+	start <-chan struct{}
 
-	curTime utils.Provider[time.Time]
-	clnDur  utils.Provider[time.Duration] // cooldown between cleanups
+	curTime        utils.Provider[time.Time]
+	cleanupTimeout utils.Provider[time.Duration] // cooldown between cleanups
 }
 
 // Config - noeviction storage config
 type Config struct {
-	CurTime     utils.Provider[time.Time]
-	ClnDur      utils.Provider[time.Duration]
-	Done, Start <-chan struct{}
+	CurTime        utils.Provider[time.Time]
+	CleanupTimeout utils.Provider[time.Duration]
+	Start          <-chan struct{}
 }
 
 // New returns new noeviction storage
-func New[T storage.Storable](cfg Config) (storage.Storage[T], error) {
+func New[T storage.Storable](cfg Config) storage.Storage[T] {
 	noev := &noeviction[T]{
-		store:   make(map[string]storage.Entry[T]),
-		mu:      &sync.RWMutex{},
-		curTime: cfg.CurTime,
-		clnDur:  cfg.ClnDur,
-		done:    cfg.Done,
-		start:   cfg.Start,
+		store:          make(map[string]storage.Entry[T]),
+		mu:             &sync.RWMutex{},
+		curTime:        cfg.CurTime,
+		cleanupTimeout: cfg.CleanupTimeout,
+		start:          cfg.Start,
 	}
 
 	go noev.cleanup()
 
-	return noev, nil
+	return noev
 }
 
 func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], error) {
@@ -83,15 +82,10 @@ func (s *noeviction[T]) cleanup() {
 	<-s.start
 
 	for {
-		select {
-		case <-s.done:
-			return
-		default:
-			s.clean()
-		}
-
 		// wait until next clean() invocation
-		time.Sleep(s.clnDur(nil))
+		time.Sleep(s.cleanupTimeout(nil))
+
+		s.clean()
 	}
 }
 

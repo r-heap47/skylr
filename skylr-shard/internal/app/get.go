@@ -25,6 +25,9 @@ func (i *Implementation) Get(ctx context.Context, req *pbshard.GetRequest) (*pbs
 }
 
 func validateGetRequest(req *pbshard.GetRequest) error {
+	if req == nil {
+		return errors.New("UNEXPECTED: GetRequest is nil")
+	}
 	if req.Key == "" {
 		return errors.New("key cannot be empty")
 	}
