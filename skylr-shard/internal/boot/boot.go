@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,12 +15,19 @@ import (
 	"github.com/cutlery47/skylr/skylr-shard/internal/shard"
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage/storages/noeviction"
 	pbshard "github.com/cutlery47/skylr/skylr-shard/pkg/pb/skylr-shard"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // nolint: revive
 func Run() error {
 	var (
+		initCtx = context.Background()
+
+		grpcEndpoint = "0.0.0.0:8000"
+		gwEndpoint   = "0.0.0.0:8001"
+
 		startCh = make(chan struct{})
 	)
 
@@ -75,37 +83,74 @@ func Run() error {
 		Shard: shard,
 	})
 
-	lis, err := net.Listen("tcp", "0.0.0.0:0")
+	// === GRPC SERVER SETUP ===
+
+	grpcServer := grpc.NewServer()
+
+	lis, err := net.Listen("tcp", grpcEndpoint)
 	if err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
 
-	_, port, err := net.SplitHostPort(lis.Addr().String())
-	if err != nil {
-		return fmt.Errorf("net.SplitHostPort: %w", err)
-	}
-
-	srv := grpc.NewServer()
-
 	go func() {
-		log.Printf("[GRPC] grpc server is set up on port %s...\n", port)
+		pbshard.RegisterShardServer(grpcServer, impl)
 
-		pbshard.RegisterShardServer(srv, impl)
+		log.Printf("[GRPC] grpc server is set up on %s\n", grpcEndpoint)
 		startCh <- struct{}{} // initializing storages within shard
 
-		err := srv.Serve(lis)
+		err := grpcServer.Serve(lis)
 		if err != nil {
-			log.Fatalf("[GRPC] grpc server error: %s", err)
+			log.Fatalf("grpcServer.Serve: %s", err)
 		}
 	}()
+
+	// === GRPC-GATEWAY (HTTP) SERVER SETUP
+
+	gwMux := runtime.NewServeMux()
+
+	httpServer := &http.Server{
+		Addr:    gwEndpoint,
+		Handler: gwMux,
+	}
+
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	}
+
+	err = pbshard.RegisterShardHandlerFromEndpoint(initCtx, gwMux, grpcEndpoint, opts)
+	if err != nil {
+		return fmt.Errorf("pbshard.RegisterShardHandlerFromEndpoint: %w", err)
+	}
+
+	go func() {
+		log.Printf("[GRPC] grpc-gateway server is set up on %s\n", gwEndpoint)
+
+		err := http.ListenAndServe(gwEndpoint, httpServer.Handler)
+		if err != nil {
+			log.Fatalf("http.ListenAndServe: %s", err)
+		}
+	}()
+
+	// === GRACEFUL SHUTDOWN ===
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigChan
 
-	log.Println("[GRPC] grpc server shutdown...")
-	srv.GracefulStop()
+	log.Println("[GRPC] shutting down grpc server...")
+	grpcServer.GracefulStop()
+
+	log.Println("[GRPC] shutting down grpc-gateway server...")
+	shutdownCtx, cancel := context.WithTimeout(initCtx, 5*time.Second)
+	defer cancel()
+
+	err = httpServer.Shutdown(shutdownCtx)
+	if err != nil {
+		log.Fatalf("httpServer.Shutdown: %s", err)
+	}
+
+	log.Println("[GRPC] shutdown success")
 
 	return nil
 }
