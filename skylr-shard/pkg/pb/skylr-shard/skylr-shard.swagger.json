@@ -1,0 +1,100 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "skylr-shard.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Shard"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Entry": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "key"
+        },
+        "valueStr": {
+          "type": "string",
+          "title": "str value"
+        },
+        "valueInt32": {
+          "type": "integer",
+          "format": "int32",
+          "title": "int32 value"
+        },
+        "valueInt64": {
+          "type": "string",
+          "format": "int64",
+          "title": "int64 value"
+        },
+        "valueFloat": {
+          "type": "number",
+          "format": "float",
+          "title": "float32 value"
+        },
+        "valueDouble": {
+          "type": "number",
+          "format": "double",
+          "title": "float64 value"
+        },
+        "ttl": {
+          "type": "string",
+          "title": "ttl\nNOTE: ALWAYS nil when returned from Get"
+        }
+      },
+      "title": "Entry - storage entry"
+    },
+    "v1GetResponse": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "$ref": "#/definitions/v1Entry"
+        }
+      },
+      "title": "GetResponse - get request response"
+    },
+    "v1SetResponse": {
+      "type": "object",
+      "title": "SetResponse - set request response"
+    }
+  }
+}
