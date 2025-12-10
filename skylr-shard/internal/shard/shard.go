@@ -149,41 +149,42 @@ func (sh *Shard) Get(ctx context.Context, k string) (*pbshard.Entry, error) {
 }
 
 // Set uploads new entry to storage
-func (sh *Shard) Set(ctx context.Context, e *pbshard.Entry) error {
+func (sh *Shard) Set(ctx context.Context, in *pbshard.InputEntry) error {
 	var (
 		err error
 		// calc expiration time
-		exp = sh.curTime(ctx).Add(e.Ttl.AsDuration())
+		exp   = sh.curTime(ctx).Add(in.Ttl.AsDuration())
+		entry = in.Entry
 	)
 
-	switch val := e.Value.(type) {
+	switch val := entry.Value.(type) {
 	case *pbshard.Entry_ValueStr:
 		_, err = sh.storageStr.Set(ctx, storage.Entry[string]{
-			K:   e.Key,
+			K:   entry.Key,
 			V:   val.ValueStr,
 			Exp: exp,
 		})
 	case *pbshard.Entry_ValueInt64:
 		_, err = sh.storageInt64.Set(ctx, storage.Entry[int64]{
-			K:   e.Key,
+			K:   entry.Key,
 			V:   val.ValueInt64,
 			Exp: exp,
 		})
 	case *pbshard.Entry_ValueInt32:
 		_, err = sh.storageInt32.Set(ctx, storage.Entry[int32]{
-			K:   e.Key,
+			K:   entry.Key,
 			V:   val.ValueInt32,
 			Exp: exp,
 		})
 	case *pbshard.Entry_ValueDouble:
 		_, err = sh.storageFloat64.Set(ctx, storage.Entry[float64]{
-			K:   e.Key,
+			K:   entry.Key,
 			V:   val.ValueDouble,
 			Exp: exp,
 		})
 	case *pbshard.Entry_ValueFloat:
 		_, err = sh.storageFloat32.Set(ctx, storage.Entry[float32]{
-			K:   e.Key,
+			K:   entry.Key,
 			V:   val.ValueFloat,
 			Exp: exp,
 		})

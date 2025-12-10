@@ -7,6 +7,7 @@
 package pbshard
 
 import (
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
@@ -115,7 +116,7 @@ func (x *GetResponse) GetEntry() *Entry {
 // SetRequest - set request params
 type SetRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Entry         *Entry                 `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+	Input         *InputEntry            `protobuf:"bytes,1,opt,name=input,proto3" json:"input,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -150,9 +151,9 @@ func (*SetRequest) Descriptor() ([]byte, []int) {
 	return file_skylr_shard_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *SetRequest) GetEntry() *Entry {
+func (x *SetRequest) GetInput() *InputEntry {
 	if x != nil {
-		return x.Entry
+		return x.Input
 	}
 	return nil
 }
@@ -208,10 +209,7 @@ type Entry struct {
 	//	*Entry_ValueInt64
 	//	*Entry_ValueFloat
 	//	*Entry_ValueDouble
-	Value isEntry_Value `protobuf_oneof:"value"`
-	// ttl
-	// NOTE: ALWAYS nil when returned from Get
-	Ttl           *durationpb.Duration `protobuf:"bytes,7,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	Value         isEntry_Value `protobuf_oneof:"value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -305,13 +303,6 @@ func (x *Entry) GetValueDouble() float64 {
 	return 0
 }
 
-func (x *Entry) GetTtl() *durationpb.Duration {
-	if x != nil {
-		return x.Ttl
-	}
-	return nil
-}
-
 type isEntry_Value interface {
 	isEntry_Value()
 }
@@ -351,20 +342,75 @@ func (*Entry_ValueFloat) isEntry_Value() {}
 
 func (*Entry_ValueDouble) isEntry_Value() {}
 
+// InputEntry - input storage entry
+type InputEntry struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// entry
+	Entry *Entry `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+	// ttl
+	Ttl           *durationpb.Duration `protobuf:"bytes,7,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InputEntry) Reset() {
+	*x = InputEntry{}
+	mi := &file_skylr_shard_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InputEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InputEntry) ProtoMessage() {}
+
+func (x *InputEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_skylr_shard_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InputEntry.ProtoReflect.Descriptor instead.
+func (*InputEntry) Descriptor() ([]byte, []int) {
+	return file_skylr_shard_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *InputEntry) GetEntry() *Entry {
+	if x != nil {
+		return x.Entry
+	}
+	return nil
+}
+
+func (x *InputEntry) GetTtl() *durationpb.Duration {
+	if x != nil {
+		return x.Ttl
+	}
+	return nil
+}
+
 var File_skylr_shard_proto protoreflect.FileDescriptor
 
 const file_skylr_shard_proto_rawDesc = "" +
 	"\n" +
-	"\x11skylr-shard.proto\x12\x0eskylr_shard.v1\x1a\x1egoogle/protobuf/duration.proto\"\x1e\n" +
+	"\x11skylr-shard.proto\x12\x0eskylr_shard.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/api/annotations.proto\"\x1e\n" +
 	"\n" +
 	"GetRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\":\n" +
 	"\vGetResponse\x12+\n" +
-	"\x05entry\x18\x01 \x01(\v2\x15.skylr_shard.v1.EntryR\x05entry\"9\n" +
+	"\x05entry\x18\x01 \x01(\v2\x15.skylr_shard.v1.EntryR\x05entry\">\n" +
 	"\n" +
-	"SetRequest\x12+\n" +
-	"\x05entry\x18\x01 \x01(\v2\x15.skylr_shard.v1.EntryR\x05entry\"\r\n" +
-	"\vSetResponse\"\xfc\x01\n" +
+	"SetRequest\x120\n" +
+	"\x05input\x18\x01 \x01(\v2\x1a.skylr_shard.v1.InputEntryR\x05input\"\r\n" +
+	"\vSetResponse\"\xcf\x01\n" +
 	"\x05Entry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1d\n" +
 	"\tvalue_str\x18\x02 \x01(\tH\x00R\bvalueStr\x12!\n" +
@@ -374,12 +420,15 @@ const file_skylr_shard_proto_rawDesc = "" +
 	"valueInt64\x12!\n" +
 	"\vvalue_float\x18\x05 \x01(\x02H\x00R\n" +
 	"valueFloat\x12#\n" +
-	"\fvalue_double\x18\x06 \x01(\x01H\x00R\vvalueDouble\x12+\n" +
-	"\x03ttl\x18\a \x01(\v2\x19.google.protobuf.DurationR\x03ttlB\a\n" +
-	"\x05value2\x87\x01\n" +
-	"\x05Shard\x12>\n" +
-	"\x03Get\x12\x1a.skylr_shard.v1.GetRequest\x1a\x1b.skylr_shard.v1.GetResponse\x12>\n" +
-	"\x03Set\x12\x1a.skylr_shard.v1.SetRequest\x1a\x1b.skylr_shard.v1.SetResponseB\x17Z\x15./skylr-shard;pbshardb\x06proto3"
+	"\fvalue_double\x18\x06 \x01(\x01H\x00R\vvalueDoubleB\a\n" +
+	"\x05value\"f\n" +
+	"\n" +
+	"InputEntry\x12+\n" +
+	"\x05entry\x18\x01 \x01(\v2\x15.skylr_shard.v1.EntryR\x05entry\x12+\n" +
+	"\x03ttl\x18\a \x01(\v2\x19.google.protobuf.DurationR\x03ttl2\xb4\x01\n" +
+	"\x05Shard\x12S\n" +
+	"\x03Get\x12\x1a.skylr_shard.v1.GetRequest\x1a\x1b.skylr_shard.v1.GetResponse\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/api/v1/get\x12V\n" +
+	"\x03Set\x12\x1a.skylr_shard.v1.SetRequest\x1a\x1b.skylr_shard.v1.SetResponse\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/api/v1/setB\x17Z\x15./skylr-shard;pbshardb\x06proto3"
 
 var (
 	file_skylr_shard_proto_rawDescOnce sync.Once
@@ -393,28 +442,30 @@ func file_skylr_shard_proto_rawDescGZIP() []byte {
 	return file_skylr_shard_proto_rawDescData
 }
 
-var file_skylr_shard_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_skylr_shard_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_skylr_shard_proto_goTypes = []any{
 	(*GetRequest)(nil),          // 0: skylr_shard.v1.GetRequest
 	(*GetResponse)(nil),         // 1: skylr_shard.v1.GetResponse
 	(*SetRequest)(nil),          // 2: skylr_shard.v1.SetRequest
 	(*SetResponse)(nil),         // 3: skylr_shard.v1.SetResponse
 	(*Entry)(nil),               // 4: skylr_shard.v1.Entry
-	(*durationpb.Duration)(nil), // 5: google.protobuf.Duration
+	(*InputEntry)(nil),          // 5: skylr_shard.v1.InputEntry
+	(*durationpb.Duration)(nil), // 6: google.protobuf.Duration
 }
 var file_skylr_shard_proto_depIdxs = []int32{
 	4, // 0: skylr_shard.v1.GetResponse.entry:type_name -> skylr_shard.v1.Entry
-	4, // 1: skylr_shard.v1.SetRequest.entry:type_name -> skylr_shard.v1.Entry
-	5, // 2: skylr_shard.v1.Entry.ttl:type_name -> google.protobuf.Duration
-	0, // 3: skylr_shard.v1.Shard.Get:input_type -> skylr_shard.v1.GetRequest
-	2, // 4: skylr_shard.v1.Shard.Set:input_type -> skylr_shard.v1.SetRequest
-	1, // 5: skylr_shard.v1.Shard.Get:output_type -> skylr_shard.v1.GetResponse
-	3, // 6: skylr_shard.v1.Shard.Set:output_type -> skylr_shard.v1.SetResponse
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	5, // 1: skylr_shard.v1.SetRequest.input:type_name -> skylr_shard.v1.InputEntry
+	4, // 2: skylr_shard.v1.InputEntry.entry:type_name -> skylr_shard.v1.Entry
+	6, // 3: skylr_shard.v1.InputEntry.ttl:type_name -> google.protobuf.Duration
+	0, // 4: skylr_shard.v1.Shard.Get:input_type -> skylr_shard.v1.GetRequest
+	2, // 5: skylr_shard.v1.Shard.Set:input_type -> skylr_shard.v1.SetRequest
+	1, // 6: skylr_shard.v1.Shard.Get:output_type -> skylr_shard.v1.GetResponse
+	3, // 7: skylr_shard.v1.Shard.Set:output_type -> skylr_shard.v1.SetResponse
+	6, // [6:8] is the sub-list for method output_type
+	4, // [4:6] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_skylr_shard_proto_init() }
@@ -435,7 +486,7 @@ func file_skylr_shard_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_skylr_shard_proto_rawDesc), len(file_skylr_shard_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

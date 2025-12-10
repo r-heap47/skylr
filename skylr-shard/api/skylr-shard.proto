@@ -5,13 +5,23 @@ package skylr_shard.v1;
 option go_package = "./skylr-shard;pbshard";
 
 import "google/protobuf/duration.proto";
+import "google/api/annotations.proto";
 
 // Shard - gprc shard service
 service Shard {
     // Get returns Entry by provided key
-    rpc Get(GetRequest) returns (GetResponse);
+    rpc Get(GetRequest) returns (GetResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/get"
+        };
+    }
     // Set uploads new entry to storage
-    rpc Set(SetRequest) returns (SetResponse);
+    rpc Set(SetRequest) returns (SetResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/set"
+            body: "*"
+        };
+    }
 }
 
 // GetRequest - get request params
@@ -26,7 +36,7 @@ message GetResponse {
 
 // SetRequest - set request params
 message SetRequest {
-    Entry entry = 1;
+    InputEntry input = 1;
 }
 
 // SetResponse - set request response
@@ -37,7 +47,7 @@ message SetResponse {
 message Entry {
     // key
     string key = 1;
-    // value
+     // value
     oneof value {
         // str value
         string value_str = 2;
@@ -50,7 +60,12 @@ message Entry {
         // float64 value
         double value_double = 6;
     }
+}
+
+// InputEntry - input storage entry
+message InputEntry {
+    // entry
+    Entry entry = 1;
     // ttl
-    // NOTE: ALWAYS nil when returned from Get
     google.protobuf.Duration ttl = 7;
 }

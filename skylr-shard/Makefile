@@ -17,6 +17,7 @@ PROTOC_GEN_OPENAPI_BIN ?= $(LOCAL_BIN)/protoc-gen-openapiv2
 PROTOC_GEN_OPENAPI_TAG ?= latest
 
 PROTOC_SRC := $(CURDIR)/api
+PROTOVENDOR_SRC := $(CURDIR)/vendor.protogen
 PROTOC_DST := $(CURDIR)/pkg/pb
 OPENAPI_OUT := $(CURDIR)/pkg/pb/skylr-shard
 
@@ -39,6 +40,7 @@ build:
 pbgen:
 	protoc \
 		-I=$(PROTOC_SRC) \
+		-I=$(PROTOVENDOR_SRC) \
 		--plugin=protoc-gen-go=$(PROTOC_GEN_GO_BIN) \
 		--plugin=protoc-gen-go-grpc=$(PROTOC_GEN_GO_GRPC_BIN) \
 		--plugin=protoc-gen-grpc-gateway=$(PROTOC_GEN_GRPC_GATEWAY_BIN) \
@@ -46,8 +48,8 @@ pbgen:
 		--go_out=$(PROTOC_DST) \
 		--go-grpc_out=$(PROTOC_DST) \
 		--grpc-gateway_out=$(PROTOC_DST) \
+		--grpc-gateway_opt generate_unbound_methods=true \
 		--openapiv2_out=$(OPENAPI_OUT) \
-    	--grpc-gateway_opt generate_unbound_methods=true \
 		$(PROTOC_SRC)/skylr-shard.proto
 
 .PHONY: deps

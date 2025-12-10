@@ -15,7 +15,72 @@
   "produces": [
     "application/json"
   ],
-  "paths": {},
+  "paths": {
+    "/api/v1/get": {
+      "get": {
+        "summary": "Get returns Entry by provided key",
+        "operationId": "Shard_Get",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Shard"
+        ]
+      }
+    },
+    "/api/v1/set": {
+      "post": {
+        "summary": "Set uploads new entry to storage",
+        "operationId": "Shard_Set",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SetRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Shard"
+        ]
+      }
+    }
+  },
   "definitions": {
     "protobufAny": {
       "type": "object",
@@ -75,10 +140,6 @@
           "type": "number",
           "format": "double",
           "title": "float64 value"
-        },
-        "ttl": {
-          "type": "string",
-          "title": "ttl\nNOTE: ALWAYS nil when returned from Get"
         }
       },
       "title": "Entry - storage entry"
@@ -91,6 +152,29 @@
         }
       },
       "title": "GetResponse - get request response"
+    },
+    "v1InputEntry": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "$ref": "#/definitions/v1Entry",
+          "title": "entry"
+        },
+        "ttl": {
+          "type": "string",
+          "title": "ttl"
+        }
+      },
+      "title": "InputEntry - input storage entry"
+    },
+    "v1SetRequest": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "$ref": "#/definitions/v1InputEntry"
+        }
+      },
+      "title": "SetRequest - set request params"
     },
     "v1SetResponse": {
       "type": "object",

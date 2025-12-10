@@ -13,7 +13,7 @@ func (i *Implementation) Set(ctx context.Context, req *pbshard.SetRequest) (*pbs
 		return nil, err
 	}
 
-	err := i.shard.Set(ctx, req.Entry)
+	err := i.shard.Set(ctx, req.Input)
 	if err != nil {
 		return nil, fmt.Errorf("shard.Set: %w", err)
 	}
@@ -25,16 +25,19 @@ func validateSetRequest(req *pbshard.SetRequest) error {
 	if req == nil {
 		return errors.New("UNEXPECTED: SetRequest is nil")
 	}
-	if req.Entry == nil {
+	if req.Input == nil {
+		return errors.New("input cannot be nil")
+	}
+	if req.Input.Entry == nil {
 		return errors.New("entry cannot be nil")
 	}
-	if req.Entry.Key == "" {
+	if req.Input.Entry.Key == "" {
 		return errors.New("key cannot be empty")
 	}
-	if req.Entry.Value == nil {
+	if req.Input.Entry.Value == nil {
 		return errors.New("value cannot be nil")
 	}
-	if req.Entry.Ttl == nil {
+	if req.Input.Ttl == nil {
 		return errors.New("ttl cannot be nil")
 	}
 
