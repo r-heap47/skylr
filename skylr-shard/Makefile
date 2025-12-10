@@ -17,7 +17,7 @@ PROTOC_GEN_OPENAPI_BIN ?= $(LOCAL_BIN)/protoc-gen-openapiv2
 PROTOC_GEN_OPENAPI_TAG ?= latest
 
 PROTOC_SRC := $(CURDIR)/api
-PROTOVENDOR_SRC := $(CURDIR)/vendor.protogen
+PROTOVENDOR_SRC := $(CURDIR)/vendor.proto
 PROTOC_DST := $(CURDIR)/pkg/pb
 OPENAPI_OUT := $(CURDIR)/pkg/pb/skylr-shard
 
