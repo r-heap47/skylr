@@ -15,30 +15,22 @@ type noeviction[T storage.Storable] struct {
 	store map[string]storage.Entry[T]
 	mu    *sync.RWMutex
 
-	start <-chan struct{}
-
-	curTime        utils.Provider[time.Time]
-	cleanupTimeout utils.Provider[time.Duration] // cooldown between cleanups
+	curTime utils.Provider[time.Time]
 }
 
 // Config - noeviction storage config
 type Config struct {
 	CurTime        utils.Provider[time.Time]
 	CleanupTimeout utils.Provider[time.Duration]
-	Start          <-chan struct{}
 }
 
 // New returns new noeviction storage
 func New[T storage.Storable](cfg Config) storage.Storage[T] {
 	noev := &noeviction[T]{
-		store:          make(map[string]storage.Entry[T]),
-		mu:             &sync.RWMutex{},
-		curTime:        cfg.CurTime,
-		cleanupTimeout: cfg.CleanupTimeout,
-		start:          cfg.Start,
+		store:   make(map[string]storage.Entry[T]),
+		mu:      &sync.RWMutex{},
+		curTime: cfg.CurTime,
 	}
-
-	go noev.cleanup()
 
 	return noev
 }
@@ -76,22 +68,10 @@ func (s *noeviction[T]) Set(ctx context.Context, e storage.Entry[T]) (*storage.E
 	return &e, nil
 }
 
-// cleanup initializes cleaning process
-func (s *noeviction[T]) cleanup() {
-	// wait for shard initialization
-	<-s.start
-
-	for {
-		// wait until next clean() invocation
-		time.Sleep(s.cleanupTimeout(nil))
-
-		s.clean()
+func (s *noeviction[T]) Clean(ctx context.Context, now time.Time) error {
+	if utils.CtxDone(ctx) {
+		return errors.ErrCtxDone
 	}
-}
-
-// clean deletes expired keys from storage
-func (s *noeviction[T]) clean() {
-	now := s.curTime(nil)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -101,4 +81,6 @@ func (s *noeviction[T]) clean() {
 			delete(s.store, k)
 		}
 	}
+
+	return nil
 }

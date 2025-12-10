@@ -42,31 +42,26 @@ func Run() error {
 	storageStr := noeviction.New[string](noeviction.Config{
 		CurTime:        curTime,
 		CleanupTimeout: cleanupTimeout,
-		Start:          startCh,
 	})
 
 	storageInt64 := noeviction.New[int64](noeviction.Config{
 		CurTime:        curTime,
 		CleanupTimeout: cleanupTimeout,
-		Start:          startCh,
 	})
 
 	storageInt32 := noeviction.New[int32](noeviction.Config{
 		CurTime:        curTime,
 		CleanupTimeout: cleanupTimeout,
-		Start:          startCh,
 	})
 
 	storageFloat64 := noeviction.New[float64](noeviction.Config{
 		CurTime:        curTime,
 		CleanupTimeout: cleanupTimeout,
-		Start:          startCh,
 	})
 
 	storageFloat32 := noeviction.New[float32](noeviction.Config{
 		CurTime:        curTime,
 		CleanupTimeout: cleanupTimeout,
-		Start:          startCh,
 	})
 
 	shard := shard.New(shard.Config{
@@ -76,7 +71,11 @@ func Run() error {
 		StorageFloat64: storageFloat64,
 		StorageFloat32: storageFloat32,
 
-		CurTime: curTime,
+		CurTime:         curTime,
+		CleanupTimeout:  cleanupTimeout,
+		CleanupCooldown: cleanupTimeout,
+
+		Start: startCh,
 	})
 
 	impl := app.New(app.Config{

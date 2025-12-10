@@ -22,7 +22,11 @@ type Shard struct {
 	storageFloat64 storage.Storage[float64]
 	storageFloat32 storage.Storage[float32]
 
-	curTime utils.Provider[time.Time]
+	curTime         utils.Provider[time.Time]
+	cleanupTimeout  utils.Provider[time.Duration]
+	cleanupCooldown utils.Provider[time.Duration]
+
+	start <-chan struct{}
 }
 
 type Config struct {
@@ -32,18 +36,32 @@ type Config struct {
 	StorageFloat64 storage.Storage[float64]
 	StorageFloat32 storage.Storage[float32]
 
-	CurTime utils.Provider[time.Time]
+	CurTime         utils.Provider[time.Time]
+	CleanupTimeout  utils.Provider[time.Duration] // cooldown between cleanups
+	CleanupCooldown utils.Provider[time.Duration]
+
+	Start <-chan struct{}
 }
 
 func New(cfg Config) *Shard {
-	return &Shard{
-		storageStr:     cfg.StorageStr,
-		storageInt64:   cfg.StorageInt64,
-		storageInt32:   cfg.StorageInt32,
-		storageFloat64: cfg.StorageFloat64,
-		storageFloat32: cfg.StorageFloat32,
-		curTime:        cfg.CurTime,
+	sh := &Shard{
+		storageStr:      cfg.StorageStr,
+		storageInt64:    cfg.StorageInt64,
+		storageInt32:    cfg.StorageInt32,
+		storageFloat64:  cfg.StorageFloat64,
+		storageFloat32:  cfg.StorageFloat32,
+		curTime:         cfg.CurTime,
+		cleanupCooldown: cfg.CleanupCooldown,
+		cleanupTimeout:  cfg.CleanupTimeout,
+		start:           cfg.Start,
 	}
+
+	// init cleanup process
+	defer func() {
+		go sh.cleanup()
+	}()
+
+	return sh
 }
 
 // Get searches for entry in each storage by provided key
@@ -193,4 +211,62 @@ func (sh *Shard) Set(ctx context.Context, in *pbshard.InputEntry) error {
 	}
 
 	return err
+}
+
+// cleanup performs cleanup-loop
+func (sh *Shard) cleanup() {
+	// wait for shard initialization
+	<-sh.start
+
+	for {
+		ctx := context.Background()
+
+		sh.clean(ctx)
+		time.Sleep(sh.cleanupCooldown(ctx))
+	}
+}
+
+// clean cleans each storage
+func (sh *Shard) clean(ctx context.Context) error {
+	var (
+		timeout = sh.cleanupTimeout(ctx)
+		now     = sh.curTime(ctx)
+
+		// recieves error/nil if cleanup finished
+		errCh = make(chan error)
+	)
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	go func() {
+		// performing cleanup for each storage in a separate goroutime
+		eg, egCtx := errgroup.WithContext(ctx)
+
+		eg.Go(func() error {
+			return sh.storageFloat32.Clean(egCtx, now)
+		})
+		eg.Go(func() error {
+			return sh.storageFloat64.Clean(egCtx, now)
+		})
+		eg.Go(func() error {
+			return sh.storageInt32.Clean(egCtx, now)
+		})
+		eg.Go(func() error {
+			return sh.storageInt64.Clean(egCtx, now)
+		})
+		eg.Go(func() error {
+			return sh.storageStr.Clean(egCtx, now)
+		})
+
+		errCh <- eg.Wait()
+	}()
+
+	// waiting either for ctx to timeout or for errgroup to finish
+	select {
+	case <-ctx.Done():
+		return stderrs.New("cleanup timed out")
+	case err := <-errCh:
+		return err
+	}
 }

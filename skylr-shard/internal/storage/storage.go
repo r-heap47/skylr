@@ -16,6 +16,8 @@ type Storage[T Storable] interface {
 	Get(ctx context.Context, k string) (*Entry[T], error)
 	// Set creates/updates key-value pair in the storage
 	Set(ctx context.Context, e Entry[T]) (*Entry[T], error)
+	// Clean cleans up expired entries
+	Clean(ctx context.Context, now time.Time) error
 }
 
 // Entry - key-value pair with additional data
