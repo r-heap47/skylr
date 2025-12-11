@@ -39,6 +39,10 @@ func Run() error {
 		return 5 * time.Second
 	}
 
+	cleanupCooldown := func(ctx context.Context) time.Duration {
+		return 5 * time.Second
+	}
+
 	storageStr := noeviction.New[string](noeviction.Config{
 		CurTime:        curTime,
 		CleanupTimeout: cleanupTimeout,
@@ -73,7 +77,7 @@ func Run() error {
 
 		CurTime:         curTime,
 		CleanupTimeout:  cleanupTimeout,
-		CleanupCooldown: cleanupTimeout,
+		CleanupCooldown: cleanupCooldown,
 
 		Start: startCh,
 	})

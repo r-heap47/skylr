@@ -36,8 +36,8 @@ func New[T storage.Storable](cfg Config) storage.Storage[T] {
 }
 
 func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], error) {
-	if utils.CtxDone(ctx) {
-		return nil, errors.ErrCtxDone
+	if err := utils.CtxDone(ctx); err != nil {
+		return nil, err
 	}
 
 	s.mu.RLock()
@@ -56,8 +56,8 @@ func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], e
 }
 
 func (s *noeviction[T]) Set(ctx context.Context, e storage.Entry[T]) (*storage.Entry[T], error) {
-	if utils.CtxDone(ctx) {
-		return nil, errors.ErrCtxDone
+	if err := utils.CtxDone(ctx); err != nil {
+		return nil, err
 	}
 
 	s.mu.Lock()
@@ -69,18 +69,26 @@ func (s *noeviction[T]) Set(ctx context.Context, e storage.Entry[T]) (*storage.E
 }
 
 func (s *noeviction[T]) Clean(ctx context.Context, now time.Time) error {
-	if utils.CtxDone(ctx) {
-		return errors.ErrCtxDone
-	}
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	for k, entry := range s.store {
+		if err := utils.CtxDone(ctx); err != nil {
+			return err
+		}
+
 		if now.After(entry.Exp) {
 			delete(s.store, k)
 		}
 	}
 
 	return nil
+}
+
+func (s *noeviction[T]) Len(ctx context.Context) (int, error) {
+	if err := utils.CtxDone(ctx); err != nil {
+		return 0, err
+	}
+
+	return len(s.store), nil
 }

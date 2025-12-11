@@ -64,7 +64,7 @@ func TestSet(t *testing.T) {
 
 		stored, err := store.Set(ctx, entry)
 		require.Error(t, err)
-		require.ErrorIs(t, err, errors.ErrCtxDone)
+		require.ErrorContains(t, err, "context canceled")
 		require.Nil(t, stored)
 	})
 }
@@ -121,7 +121,7 @@ func TestGet(t *testing.T) {
 		got, err := store.Get(ctx, entry.K)
 		require.Nil(t, got)
 		require.Error(t, err)
-		require.ErrorIs(t, err, errors.ErrCtxDone)
+		require.ErrorContains(t, err, "context canceled")
 	})
 
 	t.Run("error: not found", func(t *testing.T) {

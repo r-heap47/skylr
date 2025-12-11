@@ -18,6 +18,8 @@ type Storage[T Storable] interface {
 	Set(ctx context.Context, e Entry[T]) (*Entry[T], error)
 	// Clean cleans up expired entries
 	Clean(ctx context.Context, now time.Time) error
+	// Len returns the amount of elements in storage
+	Len(ctx context.Context) (int, error)
 }
 
 // Entry - key-value pair with additional data

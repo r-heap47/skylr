@@ -6,14 +6,14 @@ import (
 )
 
 // CtxDone checks if context is done
-func CtxDone(ctx context.Context) bool {
+func CtxDone(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
-		return true
+		return ctx.Err()
 	default:
 	}
 
-	return false
+	return nil
 }
 
 // Provider - value provider for type T

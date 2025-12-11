@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/errors"
 	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/utils"
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
-	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -265,7 +265,7 @@ func (sh *Shard) clean(ctx context.Context) error {
 	// waiting either for ctx to timeout or for errgroup to finish
 	select {
 	case <-ctx.Done():
-		return stderrs.New("cleanup timed out")
+		return ctx.Err()
 	case err := <-errCh:
 		return err
 	}
