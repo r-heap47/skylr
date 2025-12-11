@@ -73,28 +73,23 @@ func (s *shardTestSuite) SetupTest() {
 	}
 
 	storageStr := noeviction.New[string](noeviction.Config{
-		CurTime:        curTime,
-		CleanupTimeout: cleanupTimeout,
+		CurTime: curTime,
 	})
 
 	storageInt64 := noeviction.New[int64](noeviction.Config{
-		CurTime:        curTime,
-		CleanupTimeout: cleanupTimeout,
+		CurTime: curTime,
 	})
 
 	storageInt32 := noeviction.New[int32](noeviction.Config{
-		CurTime:        curTime,
-		CleanupTimeout: cleanupTimeout,
+		CurTime: curTime,
 	})
 
 	storageFloat64 := noeviction.New[float64](noeviction.Config{
-		CurTime:        curTime,
-		CleanupTimeout: cleanupTimeout,
+		CurTime: curTime,
 	})
 
 	storageFloat32 := noeviction.New[float32](noeviction.Config{
-		CurTime:        curTime,
-		CleanupTimeout: cleanupTimeout,
+		CurTime: curTime,
 	})
 
 	s.storageStr = storageStr

@@ -20,8 +20,7 @@ type noeviction[T storage.Storable] struct {
 
 // Config - noeviction storage config
 type Config struct {
-	CurTime        utils.Provider[time.Time]
-	CleanupTimeout utils.Provider[time.Duration]
+	CurTime utils.Provider[time.Time]
 }
 
 // New returns new noeviction storage
