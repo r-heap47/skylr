@@ -1,8 +1,8 @@
-package app
+package api
 
 import (
 	"github.com/cutlery47/skylr/skylr-shard/internal/shard"
-	pbshard "github.com/cutlery47/skylr/skylr-shard/pkg/pb/skylr-shard"
+	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 )
 
 // Implementation - grpc service implementation

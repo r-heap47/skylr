@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cutlery47/skylr/skylr-shard/internal/app"
+	"github.com/cutlery47/skylr/skylr-shard/internal/api"
+	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"github.com/cutlery47/skylr/skylr-shard/internal/shard"
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage/storages/noeviction"
-	pbshard "github.com/cutlery47/skylr/skylr-shard/pkg/pb/skylr-shard"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -78,7 +78,7 @@ func Run() error {
 		Start: startCh,
 	})
 
-	impl := app.New(app.Config{
+	impl := api.New(api.Config{
 		Shard: shard,
 	})
 

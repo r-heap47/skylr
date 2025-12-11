@@ -9,7 +9,7 @@ import (
 	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/errors"
 	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/utils"
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
-	pbshard "github.com/cutlery47/skylr/skylr-shard/pkg/pb/skylr-shard"
+	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 
 	"golang.org/x/sync/errgroup"
 )

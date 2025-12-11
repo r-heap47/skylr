@@ -1,11 +1,11 @@
-package app
+package api
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	pbshard "github.com/cutlery47/skylr/skylr-shard/pkg/pb/skylr-shard"
+	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 )
 
 func (i *Implementation) Set(ctx context.Context, req *pbshard.SetRequest) (*pbshard.SetResponse, error) {
