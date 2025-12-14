@@ -8,6 +8,7 @@ import (
 	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 )
 
+// Set uploads new entry to storage
 func (i *Implementation) Set(ctx context.Context, req *pbshard.SetRequest) (*pbshard.SetResponse, error) {
 	if err := validateSetRequest(req); err != nil {
 		return nil, err

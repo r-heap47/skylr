@@ -36,6 +36,10 @@ test:
 build:
 	go build -v ./...
 
+.PHONY: format
+format:
+	smartimports -local "gitlab.ozon.ru/ob/marx/"
+
 .PHONY: pbgen
 pbgen:
 	protoc \
@@ -53,7 +57,7 @@ pbgen:
 		$(PROTOC_SRC)/skylr-shard.proto
 
 .PHONY: deps
-deps: install-lint install-protoc install-protoc-grpc install-grpc-gateway
+deps: install-lint install-protoc install-protoc-grpc install-grpc-gateway install-smartimports
 
 .PHONY: lint
 lint: .lint
@@ -93,3 +97,7 @@ install-grpc-gateway:
     	github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@$(PROTOC_GEN_GRPC_GATEWAY_TAG)
 
 
+install-smartimports: export GOBIN := $(LOCAL_BIN)
+install-smartimports:
+	$(info Installing smartimports)
+	go install github.com/pav5000/smartimports/cmd/smartimports@v0.2.0

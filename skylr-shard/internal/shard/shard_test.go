@@ -134,39 +134,44 @@ func (s *shardTestSuite) TestClean_Success() {
 		exp = now.Add(100 * time.Microsecond)
 	)
 
-	s.storageFloat32.Set(ctx, storage.Entry[float32]{
+	_, err := s.storageFloat32.Set(ctx, storage.Entry[float32]{
 		K:   "key",
 		V:   1,
 		Exp: exp,
 	})
+	s.Require().NoError(err)
 
-	s.storageFloat64.Set(ctx, storage.Entry[float64]{
+	_, err = s.storageFloat64.Set(ctx, storage.Entry[float64]{
 		K:   "key",
 		V:   1,
 		Exp: exp,
 	})
+	s.Require().NoError(err)
 
-	s.storageInt32.Set(ctx, storage.Entry[int32]{
+	_, err = s.storageInt32.Set(ctx, storage.Entry[int32]{
 		K:   "key",
 		V:   1,
 		Exp: exp,
 	})
+	s.Require().NoError(err)
 
-	s.storageInt64.Set(ctx, storage.Entry[int64]{
+	_, err = s.storageInt64.Set(ctx, storage.Entry[int64]{
 		K:   "key",
 		V:   1,
 		Exp: exp,
 	})
+	s.Require().NoError(err)
 
-	s.storageStr.Set(ctx, storage.Entry[string]{
+	_, err = s.storageStr.Set(ctx, storage.Entry[string]{
 		K:   "key",
 		V:   "val",
 		Exp: exp,
 	})
+	s.Require().NoError(err)
 
 	s.now = lo.ToPtr(exp.Add(time.Microsecond))
 
-	err := s.sh.clean(ctx)
+	err = s.sh.clean(ctx)
 	s.Require().NoError(err)
 
 	s.Require().Zero(s.storageFloat32.Len(ctx))

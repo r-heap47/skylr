@@ -7,6 +7,7 @@ import (
 )
 
 // New returns new random-eviction storage
+// TODO: impl
 func New[T storage.Storable]() (storage.Storage[T], error) {
 	return nil, errors.New("not implemented")
 }

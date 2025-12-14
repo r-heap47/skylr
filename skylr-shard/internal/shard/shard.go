@@ -4,13 +4,13 @@ import (
 	"context"
 	stderrs "errors"
 	"fmt"
+	"log"
 	"time"
 
 	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/errors"
 	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/utils"
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
-
 	"golang.org/x/sync/errgroup"
 )
 
@@ -29,6 +29,7 @@ type Shard struct {
 	start <-chan struct{}
 }
 
+// Config - shard config
 type Config struct {
 	StorageStr     storage.Storage[string]
 	StorageInt64   storage.Storage[int64]
@@ -43,6 +44,7 @@ type Config struct {
 	Start <-chan struct{}
 }
 
+// New creates a new shard
 func New(cfg Config) *Shard {
 	sh := &Shard{
 		storageStr:      cfg.StorageStr,
@@ -221,7 +223,12 @@ func (sh *Shard) cleanup() {
 	for {
 		ctx := context.Background()
 
-		sh.clean(ctx)
+		err := sh.clean(ctx)
+		if err != nil {
+			// TODO: proper logging
+			log.Printf("error when doing cleanup: %s\n", err)
+		}
+
 		time.Sleep(sh.cleanupCooldown(ctx))
 	}
 }

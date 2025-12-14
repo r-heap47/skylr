@@ -21,6 +21,7 @@ import (
 )
 
 // nolint: revive
+// TODO: proper configuration
 func Run() error {
 	var (
 		initCtx = context.Background()
@@ -85,7 +86,8 @@ func Run() error {
 
 	grpcServer := grpc.NewServer()
 
-	lis, err := net.Listen("tcp", grpcEndpoint)
+	// TODO: properly configure network interface -- rm nolint
+	lis, err := net.Listen("tcp", grpcEndpoint) // nolint: gosec
 	if err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
@@ -106,6 +108,8 @@ func Run() error {
 
 	gwMux := runtime.NewServeMux()
 
+	// TODO: add timeouts to prevent Slowloris Attack -- rm nolint
+	// nolint: gosec
 	httpServer := &http.Server{
 		Addr:    gwEndpoint,
 		Handler: gwMux,
@@ -123,6 +127,8 @@ func Run() error {
 	go func() {
 		log.Printf("[GRPC] grpc-gateway server is set up on %s\n", gwEndpoint)
 
+		// TODO: move from ListenAndServe to support server timeouts -- rm nolint
+		// nolint: gosec
 		err := http.ListenAndServe(gwEndpoint, httpServer.Handler)
 		if err != nil {
 			log.Fatalf("http.ListenAndServe: %s", err)
