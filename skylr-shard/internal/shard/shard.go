@@ -215,6 +215,7 @@ func (sh *Shard) Set(ctx context.Context, in *pbshard.InputEntry) error {
 	return err
 }
 
+
 // cleanup performs cleanup-loop
 func (sh *Shard) cleanup() {
 	// wait for shard initialization

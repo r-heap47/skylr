@@ -47,6 +47,38 @@
         ]
       }
     },
+    "/api/v1/metrics": {
+      "get": {
+        "summary": "Metrics streams service metrics",
+        "operationId": "Shard_Metrics",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1MetricsResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of v1MetricsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Shard"
+        ]
+      }
+    },
     "/api/v1/set": {
       "post": {
         "summary": "Set uploads new entry to storage",
@@ -166,6 +198,19 @@
         }
       },
       "title": "InputEntry - input storage entry"
+    },
+    "v1MetricsResponse": {
+      "type": "object",
+      "properties": {
+        "numElements": {
+          "type": "string",
+          "format": "int64"
+        },
+        "cpuUsage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
     },
     "v1SetRequest": {
       "type": "object",

@@ -18,8 +18,8 @@ PROTOC_GEN_OPENAPI_TAG ?= latest
 
 PROTOC_SRC := $(CURDIR)/api
 PROTOVENDOR_SRC := $(CURDIR)/vendor.proto
-PROTOC_DST := $(CURDIR)/pkg/pb
-OPENAPI_OUT := $(CURDIR)/pkg/pb/skylr-shard
+PROTOC_DST := $(CURDIR)/internal/pb
+OPENAPI_OUT := $(CURDIR)/internal/pb/skylr-shard
 
 .PHONY: run
 run:

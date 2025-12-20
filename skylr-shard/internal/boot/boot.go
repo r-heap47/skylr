@@ -11,7 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cutlery47/skylr/skylr-shard/internal/api"
+	grpcV1 "github.com/cutlery47/skylr/skylr-shard/internal/api/grpc/v1"
+	"github.com/cutlery47/skylr/skylr-shard/internal/metrics"
 	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"github.com/cutlery47/skylr/skylr-shard/internal/shard"
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage/storages/noeviction"
@@ -78,8 +79,17 @@ func Run() error {
 		Start: startCh,
 	})
 
-	impl := api.New(api.Config{
-		Shard: shard,
+	collector := &metrics.Collector{
+		StorageStr:     storageStr,
+		StorageInt64:   storageInt64,
+		StorageInt32:   storageInt32,
+		StorageFloat64: storageFloat64,
+		StorageFloat32: storageFloat32,
+	}
+
+	impl := grpcV1.New(grpcV1.Config{
+		Shard:     shard,
+		Collector: collector,
 	})
 
 	// === GRPC SERVER SETUP ===

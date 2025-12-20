@@ -1,6 +1,7 @@
-package api
+package v1
 
 import (
+	"github.com/cutlery47/skylr/skylr-shard/internal/metrics"
 	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"github.com/cutlery47/skylr/skylr-shard/internal/shard"
 )
@@ -9,17 +10,20 @@ import (
 type Implementation struct {
 	pbshard.UnimplementedShardServer
 
-	shard *shard.Shard
+	shard     *shard.Shard
+	collector *metrics.Collector
 }
 
 // Config - API implementation config
 type Config struct {
-	Shard *shard.Shard
+	Shard     *shard.Shard
+	Collector *metrics.Collector
 }
 
 // New creates new API implementation
 func New(cfg Config) *Implementation {
 	return &Implementation{
-		shard: cfg.Shard,
+		shard:     cfg.Shard,
+		collector: cfg.Collector,
 	}
 }

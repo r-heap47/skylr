@@ -47,7 +47,6 @@ func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], e
 		return nil, errors.ErrNotFound
 	}
 	if now := s.curTime(ctx); now.After(entry.Exp) {
-		delete(s.store, k)
 		return nil, errors.ErrNotFound
 	}
 
@@ -88,6 +87,9 @@ func (s *noeviction[T]) Len(ctx context.Context) (int, error) {
 	if err := utils.CtxDone(ctx); err != nil {
 		return 0, err
 	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	return len(s.store), nil
 }

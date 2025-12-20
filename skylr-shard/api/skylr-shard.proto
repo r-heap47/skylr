@@ -6,9 +6,12 @@ option go_package = "./skylr-shard;pbshard";
 
 import "google/protobuf/duration.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 
 // Shard - gprc shard service
 service Shard {
+    // === STORAGE ===
+
     // Get returns Entry by provided key
     rpc Get(GetRequest) returns (GetResponse) {
         option (google.api.http) = {
@@ -20,6 +23,15 @@ service Shard {
         option (google.api.http) = {
             post: "/api/v1/set"
             body: "*"
+        };
+    }
+
+    // === METRICS ===
+
+    // Metrics streams service metrics
+    rpc Metrics(google.protobuf.Empty) returns (stream MetricsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/metrics"
         };
     }
 }
@@ -68,4 +80,9 @@ message InputEntry {
     Entry entry = 1;
     // ttl
     google.protobuf.Duration ttl = 7;
+}
+
+message MetricsResponse {
+    int64 num_elements = 1;
+    double cpu_usage = 2;
 }
