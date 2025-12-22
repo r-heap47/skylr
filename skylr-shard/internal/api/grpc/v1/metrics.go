@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// Metrics .
 func (i *Implementation) Metrics(_ *emptypb.Empty, stream grpc.ServerStreamingServer[pbshard.MetricsResponse]) error {
 	ctx := stream.Context()
 
