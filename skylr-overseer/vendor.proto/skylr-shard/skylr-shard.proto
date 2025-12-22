@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package skylr_shard.v1;
+
+option go_package = "./skylr-shard;pbshard";
+
+import "google/protobuf/duration.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+// Shard - gprc shard service
+service Shard {
+    // === STORAGE ===
+
+    // Get returns Entry by provided key
+    rpc Get(GetRequest) returns (GetResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/get"
+        };
+    }
+    // Set uploads new entry to storage
+    rpc Set(SetRequest) returns (SetResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/set"
+            body: "*"
+        };
+    }
+
+    // === METRICS ===
+
+    // Metrics streams service metrics
+    rpc Metrics(google.protobuf.Empty) returns (stream MetricsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/metrics"
+        };
+    }
+}
+
+// GetRequest - get request params
+message GetRequest {
+    string key = 1;
+}
+
+// GetResponse - get request response
+message GetResponse {
+    Entry entry = 1;
+}
+
+// SetRequest - set request params
+message SetRequest {
+    InputEntry input = 1;
+}
+
+// SetResponse - set request response
+message SetResponse {
+}
+
+// Entry - storage entry
+message Entry {
+    // key
+    string key = 1;
+     // value
+    oneof value {
+        // str value
+        string value_str = 2;
+        // int32 value
+        int32 value_int32 = 3;
+        // int64 value
+        int64 value_int64 = 4;
+        // float32 value
+        float value_float = 5;
+        // float64 value
+        double value_double = 6;
+    }
+}
+
+// InputEntry - input storage entry
+message InputEntry {
+    // entry
+    Entry entry = 1;
+    // ttl
+    google.protobuf.Duration ttl = 7;
+}
+
+message MetricsResponse {
+    int64 num_elements = 1;
+    double cpu_usage = 2;
+}
