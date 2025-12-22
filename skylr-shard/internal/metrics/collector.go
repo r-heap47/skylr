@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/shirou/gopsutil/v4/cpu"
+	"golang.org/x/sync/errgroup"
 )
 
+// Collector - metric collector
 type Collector struct {
 	StorageStr     storage.Storage[string]
 	StorageInt64   storage.Storage[int64]
@@ -18,6 +18,7 @@ type Collector struct {
 	StorageFloat32 storage.Storage[float32]
 }
 
+// NumElements calculates the total amount of elements in all storages
 func (c *Collector) NumElements(ctx context.Context) (int, error) {
 	var (
 		lenStr     int
@@ -62,6 +63,7 @@ func (c *Collector) NumElements(ctx context.Context) (int, error) {
 	return lenStr + lenInt32 + lenInt64 + lenFloat32 + lenFloat64, nil
 }
 
+// UsageCPU calculates CPU usage
 func (c *Collector) UsageCPU(ctx context.Context) (float64, error) {
 	usages, err := cpu.PercentWithContext(ctx, 0, false)
 	if err != nil {

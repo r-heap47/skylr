@@ -1,0 +1,229 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "skylr-shard/skylr-shard.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Shard"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/get": {
+      "get": {
+        "summary": "Get returns Entry by provided key",
+        "operationId": "Shard_Get",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Shard"
+        ]
+      }
+    },
+    "/api/v1/metrics": {
+      "get": {
+        "summary": "Metrics streams service metrics",
+        "operationId": "Shard_Metrics",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1MetricsResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of v1MetricsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Shard"
+        ]
+      }
+    },
+    "/api/v1/set": {
+      "post": {
+        "summary": "Set uploads new entry to storage",
+        "operationId": "Shard_Set",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SetRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Shard"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Entry": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "key"
+        },
+        "valueStr": {
+          "type": "string",
+          "title": "str value"
+        },
+        "valueInt32": {
+          "type": "integer",
+          "format": "int32",
+          "title": "int32 value"
+        },
+        "valueInt64": {
+          "type": "string",
+          "format": "int64",
+          "title": "int64 value"
+        },
+        "valueFloat": {
+          "type": "number",
+          "format": "float",
+          "title": "float32 value"
+        },
+        "valueDouble": {
+          "type": "number",
+          "format": "double",
+          "title": "float64 value"
+        }
+      },
+      "title": "Entry - storage entry"
+    },
+    "v1GetResponse": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "$ref": "#/definitions/v1Entry"
+        }
+      },
+      "title": "GetResponse - get request response"
+    },
+    "v1InputEntry": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "$ref": "#/definitions/v1Entry",
+          "title": "entry"
+        },
+        "ttl": {
+          "type": "string",
+          "title": "ttl"
+        }
+      },
+      "title": "InputEntry - input storage entry"
+    },
+    "v1MetricsResponse": {
+      "type": "object",
+      "properties": {
+        "numElements": {
+          "type": "string",
+          "format": "int64"
+        },
+        "cpuUsage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "v1SetRequest": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "$ref": "#/definitions/v1InputEntry"
+        }
+      },
+      "title": "SetRequest - set request params"
+    },
+    "v1SetResponse": {
+      "type": "object",
+      "title": "SetResponse - set request response"
+    }
+  }
+}

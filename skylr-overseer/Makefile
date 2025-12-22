@@ -19,7 +19,7 @@ PROTOC_GEN_OPENAPI_TAG ?= latest
 PROTOC_SRC := $(CURDIR)/api
 PROTOVENDOR_SRC := $(CURDIR)/vendor.proto
 PROTOC_DST := $(CURDIR)/internal/pb
-OPENAPI_OUT := $(CURDIR)/internal/pb/skylr-shard
+OPENAPI_OUT := $(CURDIR)/internal/pb/skylr-overseer
 
 .PHONY: run
 run:
@@ -54,10 +54,10 @@ pbgen:
 		--grpc-gateway_out=$(PROTOC_DST) \
 		--grpc-gateway_opt generate_unbound_methods=true \
 		--openapiv2_out=$(OPENAPI_OUT) \
-		$(PROTOC_SRC)/skylr-shard.proto
+		$(PROTOC_SRC)/skylr-overseer.proto
 
-.PHONY: pbgen-overseer
-pbgen-overseer:
+.PHONY: pbgen-shard
+pbgen-shard:
 	protoc \
 		-I=$(PROTOC_SRC) \
 		-I=$(PROTOVENDOR_SRC) \
@@ -70,7 +70,7 @@ pbgen-overseer:
 		--grpc-gateway_out=$(PROTOC_DST) \
 		--grpc-gateway_opt generate_unbound_methods=true \
 		--openapiv2_out=$(OPENAPI_OUT) \
-		$(PROTOVENDOR_SRC)/skylr-overseer/skylr-overseer.proto
+		$(PROTOVENDOR_SRC)/skylr-shard/skylr-shard.proto
 
 .PHONY: lint
 lint: .lint

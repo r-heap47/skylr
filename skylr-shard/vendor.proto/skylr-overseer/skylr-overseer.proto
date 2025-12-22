@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package skylr_overseer.v1;
+
+option go_package = "./skylr-overseer;pbovr";
+
+// Overseer - grpc overseer service
+service Overseer {
+
+}

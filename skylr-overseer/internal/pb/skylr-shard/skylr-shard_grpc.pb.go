@@ -2,13 +2,12 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v6.33.2
-// source: skylr-shard.proto
+// source: skylr-shard/skylr-shard.proto
 
 package pbshard
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -209,5 +208,5 @@ var Shard_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "skylr-shard.proto",
+	Metadata: "skylr-shard/skylr-shard.proto",
 }
