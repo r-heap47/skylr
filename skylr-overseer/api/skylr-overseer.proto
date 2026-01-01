@@ -4,7 +4,15 @@ package skylr_overseer.v1;
 
 option go_package = "./skylr-overseer;pbovr";
 
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
 // Overseer - grpc overseer service
 service Overseer {
-
+    // Register registers a new shard in the system
+    rpc Register(google.protobuf.Empty) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/api/v1/register"
+        };
+    }
 }

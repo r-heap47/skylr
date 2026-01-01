@@ -19,7 +19,7 @@ service Shard {
         };
     }
     // Set uploads new entry to storage
-    rpc Set(SetRequest) returns (SetResponse) {
+    rpc Set(SetRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             post: "/api/v1/set"
             body: "*"

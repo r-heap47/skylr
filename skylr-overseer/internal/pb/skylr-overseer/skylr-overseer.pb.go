@@ -7,8 +7,10 @@
 package pbovr
 
 import (
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	reflect "reflect"
 	unsafe "unsafe"
 )
@@ -24,14 +26,18 @@ var File_skylr_overseer_proto protoreflect.FileDescriptor
 
 const file_skylr_overseer_proto_rawDesc = "" +
 	"\n" +
-	"\x14skylr-overseer.proto\x12\x11skylr_overseer.v12\n" +
-	"\n" +
-	"\bOverseerB\x18Z\x16./skylr-overseer;pbovrb\x06proto3"
+	"\x14skylr-overseer.proto\x12\x11skylr_overseer.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto2`\n" +
+	"\bOverseer\x12T\n" +
+	"\bRegister\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x18\x82\xd3\xe4\x93\x02\x12\"\x10/api/v1/registerB\x18Z\x16./skylr-overseer;pbovrb\x06proto3"
 
-var file_skylr_overseer_proto_goTypes = []any{}
+var file_skylr_overseer_proto_goTypes = []any{
+	(*emptypb.Empty)(nil), // 0: google.protobuf.Empty
+}
 var file_skylr_overseer_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
+	0, // 0: skylr_overseer.v1.Overseer.Register:input_type -> google.protobuf.Empty
+	0, // 1: skylr_overseer.v1.Overseer.Register:output_type -> google.protobuf.Empty
+	1, // [1:2] is the sub-list for method output_type
+	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
