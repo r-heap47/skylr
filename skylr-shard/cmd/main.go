@@ -8,6 +8,6 @@ import (
 
 func main() {
 	if err := boot.Run(); err != nil {
-		log.Fatalf("error initializing app: %v", err)
+		log.Fatalf("[FATAL] %s", err)
 	}
 }

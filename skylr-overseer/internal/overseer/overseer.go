@@ -14,6 +14,18 @@ type Overseer struct {
 	shardsMu *sync.RWMutex
 }
 
+type Config struct {
+	Shards   []string
+	ShardsMu *sync.RWMutex
+}
+
+func New(cfg Config) *Overseer {
+	return &Overseer{
+		shards:   cfg.Shards,
+		shardsMu: cfg.ShardsMu,
+	}
+}
+
 func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 	if err := utils.CtxDone(ctx); err != nil {
 		return err

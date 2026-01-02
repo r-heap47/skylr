@@ -4,13 +4,43 @@
     "title": "skylr-overseer/skylr-overseer.proto",
     "version": "version not set"
   },
+  "tags": [
+    {
+      "name": "Overseer"
+    }
+  ],
   "consumes": [
     "application/json"
   ],
   "produces": [
     "application/json"
   ],
-  "paths": {},
+  "paths": {
+    "/api/v1/register": {
+      "post": {
+        "summary": "Register registers a new shard in the system",
+        "operationId": "Overseer_Register",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Overseer"
+        ]
+      }
+    }
+  },
   "definitions": {
     "protobufAny": {
       "type": "object",

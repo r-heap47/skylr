@@ -22,8 +22,10 @@ PROTOC_DST := $(CURDIR)/internal/pb
 OPENAPI_OUT := $(CURDIR)/internal/pb/skylr-shard
 
 .PHONY: run
+run: GRPC-PORT ?= 5000
+run: GRPC-GW-PORT ?= 5001
 run:
-	go run cmd/main.go
+	go run cmd/main.go --grpc-port=$(GRPC-PORT) --grpc-gw-port=$(GRPC-GW-PORT)
 
 .PHONY: all
 all: test build lint
@@ -53,7 +55,7 @@ pbgen:
 		--go-grpc_out=$(PROTOC_DST) \
 		--grpc-gateway_out=$(PROTOC_DST) \
 		--grpc-gateway_opt generate_unbound_methods=true \
-		--openapiv2_out=$(OPENAPI_OUT) \
+		--openapiv2_out=$(PROTOC_DST)/skylr-shard \
 		$(PROTOC_SRC)/skylr-shard.proto
 
 .PHONY: pbgen-overseer
@@ -69,7 +71,7 @@ pbgen-overseer:
 		--go-grpc_out=$(PROTOC_DST) \
 		--grpc-gateway_out=$(PROTOC_DST) \
 		--grpc-gateway_opt generate_unbound_methods=true \
-		--openapiv2_out=$(OPENAPI_OUT) \
+		--openapiv2_out=$(PROTOC_DST) \
 		$(PROTOVENDOR_SRC)/skylr-overseer/skylr-overseer.proto
 
 .PHONY: lint

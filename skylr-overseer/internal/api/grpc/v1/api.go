@@ -11,8 +11,12 @@ type Implementation struct {
 	ovr *overseer.Overseer
 }
 
-type Config struct{}
+type Config struct {
+	Ovr *overseer.Overseer
+}
 
 func New(cfg *Config) *Implementation {
-	return &Implementation{}
+	return &Implementation{
+		ovr: cfg.Ovr,
+	}
 }

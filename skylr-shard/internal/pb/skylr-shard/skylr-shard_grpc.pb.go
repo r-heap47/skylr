@@ -8,7 +8,6 @@ package pbshard
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -35,7 +34,7 @@ type ShardClient interface {
 	// Get returns Entry by provided key
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
 	// Set uploads new entry to storage
-	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
+	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Metrics streams service metrics
 	Metrics(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MetricsResponse], error)
 }
@@ -58,9 +57,9 @@ func (c *shardClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.Call
 	return out, nil
 }
 
-func (c *shardClient) Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error) {
+func (c *shardClient) Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SetResponse)
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Shard_Set_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -96,7 +95,7 @@ type ShardServer interface {
 	// Get returns Entry by provided key
 	Get(context.Context, *GetRequest) (*GetResponse, error)
 	// Set uploads new entry to storage
-	Set(context.Context, *SetRequest) (*SetResponse, error)
+	Set(context.Context, *SetRequest) (*emptypb.Empty, error)
 	// Metrics streams service metrics
 	Metrics(*emptypb.Empty, grpc.ServerStreamingServer[MetricsResponse]) error
 	mustEmbedUnimplementedShardServer()
@@ -112,7 +111,7 @@ type UnimplementedShardServer struct{}
 func (UnimplementedShardServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedShardServer) Set(context.Context, *SetRequest) (*SetResponse, error) {
+func (UnimplementedShardServer) Set(context.Context, *SetRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Set not implemented")
 }
 func (UnimplementedShardServer) Metrics(*emptypb.Empty, grpc.ServerStreamingServer[MetricsResponse]) error {

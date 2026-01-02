@@ -1,7 +1,13 @@
 package main
 
-import "log"
+import (
+	"log"
+
+	"github.com/cutlery47/skylr/skylr-overseer/internal/boot"
+)
 
 func main() {
-	log.Println("xyu")
+	if err := boot.Run(); err != nil {
+		log.Fatalf("[FATAL] %s", err)
+	}
 }

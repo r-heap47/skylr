@@ -87,7 +87,8 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1SetResponse"
+              "type": "object",
+              "properties": {}
             }
           },
           "default": {
@@ -220,10 +221,6 @@
         }
       },
       "title": "SetRequest - set request params"
-    },
-    "v1SetResponse": {
-      "type": "object",
-      "title": "SetResponse - set request response"
     }
   }
 }

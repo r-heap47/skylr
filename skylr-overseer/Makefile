@@ -22,8 +22,9 @@ PROTOC_DST := $(CURDIR)/internal/pb
 OPENAPI_OUT := $(CURDIR)/internal/pb/skylr-overseer
 
 .PHONY: run
+run: GRPC-PORT ?= 9000
 run:
-	go run cmd/main.go
+	go run cmd/main.go --port=$(GRPC-PORT)
 
 .PHONY: all
 all: test build lint
