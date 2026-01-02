@@ -30,7 +30,7 @@ const (
 // Overseer - grpc overseer service
 type OverseerClient interface {
 	// Register registers a new shard in the system
-	Register(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type overseerClient struct {
@@ -41,7 +41,7 @@ func NewOverseerClient(cc grpc.ClientConnInterface) OverseerClient {
 	return &overseerClient{cc}
 }
 
-func (c *overseerClient) Register(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *overseerClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Overseer_Register_FullMethodName, in, out, cOpts...)
@@ -58,7 +58,7 @@ func (c *overseerClient) Register(ctx context.Context, in *emptypb.Empty, opts .
 // Overseer - grpc overseer service
 type OverseerServer interface {
 	// Register registers a new shard in the system
-	Register(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	Register(context.Context, *RegisterRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedOverseerServer()
 }
 
@@ -69,7 +69,7 @@ type OverseerServer interface {
 // pointer dereference when methods are called.
 type UnimplementedOverseerServer struct{}
 
-func (UnimplementedOverseerServer) Register(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+func (UnimplementedOverseerServer) Register(context.Context, *RegisterRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Register not implemented")
 }
 func (UnimplementedOverseerServer) mustEmbedUnimplementedOverseerServer() {}
@@ -94,7 +94,7 @@ func RegisterOverseerServer(s grpc.ServiceRegistrar, srv OverseerServer) {
 }
 
 func _Overseer_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+	in := new(RegisterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func _Overseer_Register_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: Overseer_Register_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OverseerServer).Register(ctx, req.(*emptypb.Empty))
+		return srv.(OverseerServer).Register(ctx, req.(*RegisterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

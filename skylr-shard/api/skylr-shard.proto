@@ -34,6 +34,14 @@ service Shard {
             get: "/api/v1/metrics"
         };
     }
+
+    // === MISC ===
+    // Ping pongs
+    rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            get: "/api/v1/ping"
+        };
+    }
 }
 
 // GetRequest - get request params

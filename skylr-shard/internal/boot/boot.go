@@ -21,7 +21,6 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var (
@@ -175,7 +174,9 @@ func Run() error {
 	ovrClient := pbovr.NewOverseerClient(ovrConn)
 
 	// trying to register on overseer right away
-	_, err = ovrClient.Register(initCtx, &emptypb.Empty{})
+	_, err = ovrClient.Register(initCtx, &pbovr.RegisterRequest{
+		Address: grpcEndpoint,
+	})
 	if err != nil {
 		return fmt.Errorf("[GRPC] couldn't register on Overseer: %w", err)
 	}

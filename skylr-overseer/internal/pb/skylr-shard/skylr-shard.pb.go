@@ -481,11 +481,12 @@ const file_skylr_shard_skylr_shard_proto_rawDesc = "" +
 	"\x03ttl\x18\a \x01(\v2\x19.google.protobuf.DurationR\x03ttl\"Q\n" +
 	"\x0fMetricsResponse\x12!\n" +
 	"\fnum_elements\x18\x01 \x01(\x03R\vnumElements\x12\x1b\n" +
-	"\tcpu_usage\x18\x02 \x01(\x01R\bcpuUsage2\x93\x02\n" +
+	"\tcpu_usage\x18\x02 \x01(\x01R\bcpuUsage2\xdc\x02\n" +
 	"\x05Shard\x12S\n" +
-	"\x03Get\x12\x1a.skylr_shard.v1.GetRequest\x1a\x1b.skylr_shard.v1.GetResponse\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/api/v1/get\x12V\n" +
-	"\x03Set\x12\x1a.skylr_shard.v1.SetRequest\x1a\x1b.skylr_shard.v1.SetResponse\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/api/v1/set\x12]\n" +
-	"\aMetrics\x12\x16.google.protobuf.Empty\x1a\x1f.skylr_shard.v1.MetricsResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/v1/metrics0\x01B\x17Z\x15./skylr-shard;pbshardb\x06proto3"
+	"\x03Get\x12\x1a.skylr_shard.v1.GetRequest\x1a\x1b.skylr_shard.v1.GetResponse\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/api/v1/get\x12Q\n" +
+	"\x03Set\x12\x1a.skylr_shard.v1.SetRequest\x1a\x16.google.protobuf.Empty\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/api/v1/set\x12]\n" +
+	"\aMetrics\x12\x16.google.protobuf.Empty\x1a\x1f.skylr_shard.v1.MetricsResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/v1/metrics0\x01\x12L\n" +
+	"\x04Ping\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x14\x82\xd3\xe4\x93\x02\x0e\x12\f/api/v1/pingB\x17Z\x15./skylr-shard;pbshardb\x06proto3"
 
 var (
 	file_skylr_shard_skylr_shard_proto_rawDescOnce sync.Once
@@ -519,11 +520,13 @@ var file_skylr_shard_skylr_shard_proto_depIdxs = []int32{
 	0, // 4: skylr_shard.v1.Shard.Get:input_type -> skylr_shard.v1.GetRequest
 	2, // 5: skylr_shard.v1.Shard.Set:input_type -> skylr_shard.v1.SetRequest
 	8, // 6: skylr_shard.v1.Shard.Metrics:input_type -> google.protobuf.Empty
-	1, // 7: skylr_shard.v1.Shard.Get:output_type -> skylr_shard.v1.GetResponse
-	3, // 8: skylr_shard.v1.Shard.Set:output_type -> skylr_shard.v1.SetResponse
-	6, // 9: skylr_shard.v1.Shard.Metrics:output_type -> skylr_shard.v1.MetricsResponse
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
+	8, // 7: skylr_shard.v1.Shard.Ping:input_type -> google.protobuf.Empty
+	1, // 8: skylr_shard.v1.Shard.Get:output_type -> skylr_shard.v1.GetResponse
+	8, // 9: skylr_shard.v1.Shard.Set:output_type -> google.protobuf.Empty
+	6, // 10: skylr_shard.v1.Shard.Metrics:output_type -> skylr_shard.v1.MetricsResponse
+	8, // 11: skylr_shard.v1.Shard.Ping:output_type -> google.protobuf.Empty
+	8, // [8:12] is the sub-list for method output_type
+	4, // [4:8] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name

@@ -70,7 +70,7 @@ pbgen-shard:
 		--go-grpc_out=$(PROTOC_DST) \
 		--grpc-gateway_out=$(PROTOC_DST) \
 		--grpc-gateway_opt generate_unbound_methods=true \
-		--openapiv2_out=$(OPENAPI_OUT) \
+		--openapiv2_out=$(PROTOC_DST) \
 		$(PROTOVENDOR_SRC)/skylr-shard/skylr-shard.proto
 
 .PHONY: lint
