@@ -35,6 +35,14 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
         "tags": [
           "Overseer"
         ]
