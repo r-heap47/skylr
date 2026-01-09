@@ -7,7 +7,12 @@
 package pbovr
 
 import (
+	context "context"
+
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -15,12 +20,18 @@ import (
 // Requires gRPC-Go v1.64.0 or later.
 const _ = grpc.SupportPackageIsVersion9
 
+const (
+	Overseer_Register_FullMethodName = "/skylr_overseer.v1.Overseer/Register"
+)
+
 // OverseerClient is the client API for Overseer service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // Overseer - grpc overseer service
 type OverseerClient interface {
+	// Register registers a new shard in the system
+	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type overseerClient struct {
@@ -31,12 +42,24 @@ func NewOverseerClient(cc grpc.ClientConnInterface) OverseerClient {
 	return &overseerClient{cc}
 }
 
+func (c *overseerClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Overseer_Register_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OverseerServer is the server API for Overseer service.
 // All implementations must embed UnimplementedOverseerServer
 // for forward compatibility.
 //
 // Overseer - grpc overseer service
 type OverseerServer interface {
+	// Register registers a new shard in the system
+	Register(context.Context, *RegisterRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedOverseerServer()
 }
 
@@ -47,6 +70,9 @@ type OverseerServer interface {
 // pointer dereference when methods are called.
 type UnimplementedOverseerServer struct{}
 
+func (UnimplementedOverseerServer) Register(context.Context, *RegisterRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method Register not implemented")
+}
 func (UnimplementedOverseerServer) mustEmbedUnimplementedOverseerServer() {}
 func (UnimplementedOverseerServer) testEmbeddedByValue()                  {}
 
@@ -68,13 +94,36 @@ func RegisterOverseerServer(s grpc.ServiceRegistrar, srv OverseerServer) {
 	s.RegisterService(&Overseer_ServiceDesc, srv)
 }
 
+func _Overseer_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OverseerServer).Register(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Overseer_Register_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OverseerServer).Register(ctx, req.(*RegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Overseer_ServiceDesc is the grpc.ServiceDesc for Overseer service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Overseer_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "skylr_overseer.v1.Overseer",
 	HandlerType: (*OverseerServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams:     []grpc.StreamDesc{},
-	Metadata:    "skylr-overseer.proto",
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Register",
+			Handler:    _Overseer_Register_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "skylr-overseer.proto",
 }

@@ -2,6 +2,7 @@ package boot
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -13,6 +14,7 @@ import (
 
 	grpcV1 "github.com/cutlery47/skylr/skylr-shard/internal/api/grpc/v1"
 	"github.com/cutlery47/skylr/skylr-shard/internal/metrics"
+	pbovr "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-overseer"
 	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"github.com/cutlery47/skylr/skylr-shard/internal/shard"
 	"github.com/cutlery47/skylr/skylr-shard/internal/storage/storages/noeviction"
@@ -21,17 +23,31 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+var (
+	grpcPort = flag.String("grpc-port", "5000", "Port for grpc-server to be run on (default: 5000)")
+	gwPort   = flag.String("grpc-gw-port", "5001", "Port for grpc-gateway-server to be run on (default: 5001)")
+)
+
 // nolint: revive
 // TODO: proper configuration
 func Run() error {
 	var (
 		initCtx = context.Background()
 
-		grpcEndpoint = "0.0.0.0:8000"
-		gwEndpoint   = "0.0.0.0:8001"
+		grpcHost = "localhost"
+		gwHost   = "localhost"
+
+		grpcEndpoint string
+		gwEndpoint   string
 
 		startCh = make(chan struct{})
 	)
+
+	// parsing cmd flags
+	flag.Parse()
+
+	grpcEndpoint = fmt.Sprintf("%s:%s", grpcHost, *grpcPort)
+	gwEndpoint = fmt.Sprintf("%s:%s", gwHost, *gwPort)
 
 	curTime := func(ctx context.Context) time.Time {
 		return time.Now()
@@ -144,6 +160,26 @@ func Run() error {
 			log.Fatalf("http.ListenAndServe: %s", err)
 		}
 	}()
+
+	// === DIALING OVERSEER ===
+
+	ovrConn, err := grpc.NewClient(
+		"127.0.0.1:9000",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return fmt.Errorf("[GRPC] couldn't connect to Overseer: %w", err)
+	}
+
+	ovrClient := pbovr.NewOverseerClient(ovrConn)
+
+	// trying to register on overseer right away
+	_, err = ovrClient.Register(initCtx, &pbovr.RegisterRequest{
+		Address: grpcEndpoint,
+	})
+	if err != nil {
+		return fmt.Errorf("[GRPC] couldn't register on Overseer: %w", err)
+	}
 
 	// === GRACEFUL SHUTDOWN ===
 

@@ -6,17 +6,19 @@ import (
 	"fmt"
 
 	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Get returns Entry by provided key
 func (i *Implementation) Get(ctx context.Context, req *pbshard.GetRequest) (*pbshard.GetResponse, error) {
 	if err := validateGetRequest(req); err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	entry, err := i.shard.Get(ctx, req.Key)
 	if err != nil {
-		return nil, fmt.Errorf("shard.Get: %w", err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("shard.Get: %s", err))
 	}
 
 	return &pbshard.GetResponse{

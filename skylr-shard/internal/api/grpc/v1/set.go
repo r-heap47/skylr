@@ -6,20 +6,23 @@ import (
 	"fmt"
 
 	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // Set uploads new entry to storage
-func (i *Implementation) Set(ctx context.Context, req *pbshard.SetRequest) (*pbshard.SetResponse, error) {
+func (i *Implementation) Set(ctx context.Context, req *pbshard.SetRequest) (*emptypb.Empty, error) {
 	if err := validateSetRequest(req); err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	err := i.shard.Set(ctx, req.Input)
 	if err != nil {
-		return nil, fmt.Errorf("shard.Set: %w", err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("shard.Set: %s", err))
 	}
 
-	return &pbshard.SetResponse{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func validateSetRequest(req *pbshard.SetRequest) error {

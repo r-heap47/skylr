@@ -8,7 +8,6 @@ package pbshard
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -24,6 +23,7 @@ const (
 	Shard_Get_FullMethodName     = "/skylr_shard.v1.Shard/Get"
 	Shard_Set_FullMethodName     = "/skylr_shard.v1.Shard/Set"
 	Shard_Metrics_FullMethodName = "/skylr_shard.v1.Shard/Metrics"
+	Shard_Ping_FullMethodName    = "/skylr_shard.v1.Shard/Ping"
 )
 
 // ShardClient is the client API for Shard service.
@@ -35,9 +35,12 @@ type ShardClient interface {
 	// Get returns Entry by provided key
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
 	// Set uploads new entry to storage
-	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
+	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Metrics streams service metrics
 	Metrics(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MetricsResponse], error)
+	// === MISC ===
+	// Ping pongs
+	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type shardClient struct {
@@ -58,9 +61,9 @@ func (c *shardClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.Call
 	return out, nil
 }
 
-func (c *shardClient) Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error) {
+func (c *shardClient) Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SetResponse)
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Shard_Set_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -87,6 +90,16 @@ func (c *shardClient) Metrics(ctx context.Context, in *emptypb.Empty, opts ...gr
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Shard_MetricsClient = grpc.ServerStreamingClient[MetricsResponse]
 
+func (c *shardClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Shard_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShardServer is the server API for Shard service.
 // All implementations must embed UnimplementedShardServer
 // for forward compatibility.
@@ -96,9 +109,12 @@ type ShardServer interface {
 	// Get returns Entry by provided key
 	Get(context.Context, *GetRequest) (*GetResponse, error)
 	// Set uploads new entry to storage
-	Set(context.Context, *SetRequest) (*SetResponse, error)
+	Set(context.Context, *SetRequest) (*emptypb.Empty, error)
 	// Metrics streams service metrics
 	Metrics(*emptypb.Empty, grpc.ServerStreamingServer[MetricsResponse]) error
+	// === MISC ===
+	// Ping pongs
+	Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedShardServer()
 }
 
@@ -112,11 +128,14 @@ type UnimplementedShardServer struct{}
 func (UnimplementedShardServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedShardServer) Set(context.Context, *SetRequest) (*SetResponse, error) {
+func (UnimplementedShardServer) Set(context.Context, *SetRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Set not implemented")
 }
 func (UnimplementedShardServer) Metrics(*emptypb.Empty, grpc.ServerStreamingServer[MetricsResponse]) error {
 	return status.Error(codes.Unimplemented, "method Metrics not implemented")
+}
+func (UnimplementedShardServer) Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedShardServer) mustEmbedUnimplementedShardServer() {}
 func (UnimplementedShardServer) testEmbeddedByValue()               {}
@@ -186,6 +205,24 @@ func _Shard_Metrics_Handler(srv interface{}, stream grpc.ServerStream) error {
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Shard_MetricsServer = grpc.ServerStreamingServer[MetricsResponse]
 
+func _Shard_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShardServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Shard_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShardServer).Ping(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Shard_ServiceDesc is the grpc.ServiceDesc for Shard service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -200,6 +237,10 @@ var Shard_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Set",
 			Handler:    _Shard_Set_Handler,
+		},
+		{
+			MethodName: "Ping",
+			Handler:    _Shard_Ping_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

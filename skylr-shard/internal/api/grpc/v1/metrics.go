@@ -6,6 +6,8 @@ import (
 
 	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -18,12 +20,12 @@ func (i *Implementation) Metrics(_ *emptypb.Empty, stream grpc.ServerStreamingSe
 
 		numElements, err := i.collector.NumElements(ctx)
 		if err != nil {
-			return fmt.Errorf("collector.NumElements: %w", err)
+			return status.Error(codes.Internal, fmt.Sprintf("collector.NumElements: %s", err))
 		}
 
 		cpuUsage, err := i.collector.UsageCPU(ctx)
 		if err != nil {
-			return fmt.Errorf("collector.UsageCPU: %w", err)
+			return status.Error(codes.Internal, fmt.Sprintf("collector.UsageCPU: %s", err))
 		}
 
 		res.NumElements = int64(numElements)
@@ -31,7 +33,7 @@ func (i *Implementation) Metrics(_ *emptypb.Empty, stream grpc.ServerStreamingSe
 
 		err = stream.Send(&res)
 		if err != nil {
-			return fmt.Errorf("steam.Send: %w", err)
+			return status.Error(codes.Internal, fmt.Sprintf("steam.Send: %s", err))
 		}
 
 		time.Sleep(time.Second)

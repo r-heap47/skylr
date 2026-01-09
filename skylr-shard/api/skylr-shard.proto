@@ -19,7 +19,7 @@ service Shard {
         };
     }
     // Set uploads new entry to storage
-    rpc Set(SetRequest) returns (SetResponse) {
+    rpc Set(SetRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             post: "/api/v1/set"
             body: "*"
@@ -32,6 +32,14 @@ service Shard {
     rpc Metrics(google.protobuf.Empty) returns (stream MetricsResponse) {
         option (google.api.http) = {
             get: "/api/v1/metrics"
+        };
+    }
+
+    // === MISC ===
+    // Ping pongs
+    rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            get: "/api/v1/ping"
         };
     }
 }
