@@ -14,33 +14,38 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// Overseer - Shard coordinator
 type Overseer struct {
-	shards   []shardMeta
+	shards   []shard
 	shardsMu *sync.RWMutex
 }
 
-type shardMeta struct {
+// shard - Shard data used by Overseer
+type shard struct {
 	addr    string
 	errChan <-chan error
 }
 
+// New creates new Overseer
 func New() *Overseer {
 	ovr := &Overseer{
-		shards:   []shardMeta{},
+		shards:   []shard{},
 		shardsMu: &sync.RWMutex{},
 	}
 
+	// start shard failure check
 	go ovr.checkForShardFailures()
 
 	return ovr
 }
 
+// Register registers new Shard onto Overseer
 func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 	if err := utils.CtxDone(ctx); err != nil {
 		return err
 	}
 
-	// check if provided address is reachable
+	// check if shard by provided address is reachable and alive
 	shardConn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -51,7 +56,6 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 
 	shardClient := pbshard.NewShardClient(shardConn)
 
-	// check if shard is pingable
 	_, err = shardClient.Ping(ctx, &emptypb.Empty{})
 	if err != nil {
 		return fmt.Errorf("couldn't ping shard: %w", err)
@@ -59,16 +63,17 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 
 	shardErrChan := make(chan error)
 
-	obs := &Observer{
+	// if shard is reachable and alive - start heartbeat check
+	obs := &observer{
 		shardClient: shardClient,
-		shardChan:   shardErrChan,
+		errChan:     shardErrChan,
 		delay:       func(_ context.Context) time.Duration { return time.Second },
 	}
 
 	// start shard healtcheck
-	go obs.Observe()
+	go obs.observe()
 
-	ovr.appendShardAndReshard(shardMeta{
+	ovr.appendShardAndReshard(shard{
 		addr:    addr,
 		errChan: shardErrChan,
 	})
@@ -76,6 +81,7 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 	return nil
 }
 
+// checkForShardFailures checks that none of the shards have disconnected
 func (ovr *Overseer) checkForShardFailures() {
 	for {
 		for _, shard := range ovr.shards {
@@ -87,26 +93,26 @@ func (ovr *Overseer) checkForShardFailures() {
 				// do nothing
 			}
 		}
-
 	}
-
 }
 
-func (ovr *Overseer) appendShardAndReshard(meta shardMeta) {
+// appendShardAndReshard adds a new shard on Overseer and reshards inside a single lock acquisition
+func (ovr *Overseer) appendShardAndReshard(shard shard) {
 	ovr.shardsMu.Lock()
 	defer ovr.shardsMu.Unlock()
 
-	ovr.shards = append(ovr.shards, meta)
+	ovr.shards = append(ovr.shards, shard)
 	log.Printf("[INFO] New shard added successfully! Current shards: %+v\n", ovr.shards)
 	log.Printf("[WARN] APPEND RESHARDING WOULD BE INITIATED HERE\n")
 }
 
-func (ovr *Overseer) removeShardAndReshard(meta shardMeta) {
+// removeShardAndReshard removes an old shard from Overseer and reshards inside a single lock acquisition
+func (ovr *Overseer) removeShardAndReshard(oldShard shard) {
 	ovr.shardsMu.Lock()
 	defer ovr.shardsMu.Unlock()
 
 	for i, shard := range ovr.shards {
-		if shard.addr == meta.addr {
+		if shard.addr == oldShard.addr {
 			ovr.shards = append(ovr.shards[:i], ovr.shards[i+1:]...)
 			break
 		}

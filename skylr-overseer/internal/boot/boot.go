@@ -19,6 +19,7 @@ var (
 	port = flag.String("port", "9000", "Port for grpc-server to be run on (default: 9000)")
 )
 
+// Run .
 func Run() error {
 	var (
 		grpcHost     = "localhost"

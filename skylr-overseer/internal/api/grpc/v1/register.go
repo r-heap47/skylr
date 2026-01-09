@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// Register registers a new shard on overseer
 func (i *Implementation) Register(ctx context.Context, req *pbovr.RegisterRequest) (*emptypb.Empty, error) {
 	if err := validateRegisterRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -25,6 +26,7 @@ func (i *Implementation) Register(ctx context.Context, req *pbovr.RegisterReques
 }
 
 func validateRegisterRequest(req *pbovr.RegisterRequest) error {
+	// TODO: proper validation
 	if req.Address == "" {
 		return errors.New("address shoudln't be empty")
 	}

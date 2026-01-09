@@ -9,20 +9,22 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-type Observer struct {
+// observer - shard monitorer
+type observer struct {
 	shardClient pbshard.ShardClient
-	shardChan   chan<- error
+	errChan     chan<- error // channel for sending ping errors
 
 	delay utils.Provider[time.Duration]
 }
 
-func (obs *Observer) Observe() {
+// observe monitors a single shard
+func (obs *observer) observe() {
 	for {
 		ctx := context.Background()
 
 		_, err := obs.shardClient.Ping(ctx, &emptypb.Empty{})
 		if err != nil {
-			obs.shardChan <- err
+			obs.errChan <- err
 			return
 		}
 
