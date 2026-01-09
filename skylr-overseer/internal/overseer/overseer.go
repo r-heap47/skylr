@@ -15,25 +15,22 @@ import (
 )
 
 type Overseer struct {
-	shardChans []<-chan error
-
-	shards   []string // shards ipv4 addrs
+	shards   []shardMeta
 	shardsMu *sync.RWMutex
 }
 
-type Config struct {
-	Shards   []string
-	ShardsMu *sync.RWMutex
+type shardMeta struct {
+	addr    string
+	errChan <-chan error
 }
 
-func New(cfg Config) *Overseer {
+func New() *Overseer {
 	ovr := &Overseer{
-		shardChans: []<-chan error{},
-		shards:     cfg.Shards,
-		shardsMu:   cfg.ShardsMu,
+		shards:   []shardMeta{},
+		shardsMu: &sync.RWMutex{},
 	}
 
-	go ovr.slack()
+	go ovr.checkForShardFailures()
 
 	return ovr
 }
@@ -60,66 +57,61 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 		return fmt.Errorf("couldn't ping shard: %w", err)
 	}
 
-	err = ovr.addShard(addr)
-	if err != nil {
-		return fmt.Errorf("addShard: %w", err)
-	}
-
-	err = ovr.Reshard(ctx)
-	if err != nil {
-		return fmt.Errorf("Reshard: %w", err)
-	}
-
-	errChan := make(chan error)
-	ovr.shardChans = append(ovr.shardChans, errChan)
+	shardErrChan := make(chan error)
 
 	obs := &Observer{
 		shardClient: shardClient,
-		errChan:     errChan,
+		shardChan:   shardErrChan,
 		delay:       func(_ context.Context) time.Duration { return time.Second },
 	}
 
+	// start shard healtcheck
 	go obs.Observe()
 
+	ovr.appendShardAndReshard(shardMeta{
+		addr:    addr,
+		errChan: shardErrChan,
+	})
+
 	return nil
 }
 
-func (ovr *Overseer) slack() {
+func (ovr *Overseer) checkForShardFailures() {
 	for {
-		
+		for _, shard := range ovr.shards {
+			select {
+			case err := <-shard.errChan:
+				ovr.removeShardAndReshard(shard)
+				log.Printf("[ERROR] checkForShardFailures received: %s", err)
+			default:
+				// do nothing
+			}
+		}
+
 	}
+
 }
 
-func (ovr *Overseer) Reshard(ctx context.Context) error {
-	if err := utils.CtxDone(ctx); err != nil {
-		return err
-	}
-
-	log.Println("[INFO]: Reshard: resharding to be impl here")
-
-	return nil
-}
-
-func (ovr *Overseer) addShard(addr string) error {
+func (ovr *Overseer) appendShardAndReshard(meta shardMeta) {
 	ovr.shardsMu.Lock()
 	defer ovr.shardsMu.Unlock()
 
-	ovr.shards = append(ovr.shards, addr)
-	log.Printf("[INFO] New shard added successfully! Current shards: %v\n", ovr.shards)
-
-	return nil
+	ovr.shards = append(ovr.shards, meta)
+	log.Printf("[INFO] New shard added successfully! Current shards: %+v\n", ovr.shards)
+	log.Printf("[WARN] APPEND RESHARDING WOULD BE INITIATED HERE\n")
 }
 
-func (ovr *Overseer) rmShard(addr string) error {
+func (ovr *Overseer) removeShardAndReshard(meta shardMeta) {
 	ovr.shardsMu.Lock()
 	defer ovr.shardsMu.Unlock()
 
 	for i, shard := range ovr.shards {
-		if shard == addr {
+		if shard.addr == meta.addr {
 			ovr.shards = append(ovr.shards[:i], ovr.shards[i+1:]...)
-			return nil
+			break
 		}
 	}
 
-	return nil
+	log.Printf("[INFO] Shard removed successfully! Current shards: %+v\n", ovr.shards)
+	log.Printf("[WARN] REMOVE RESHARDING WOULD BE INITIATED HERE\n")
 }

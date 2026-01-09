@@ -11,7 +11,7 @@ import (
 
 type Observer struct {
 	shardClient pbshard.ShardClient
-	errChan     chan<- error
+	shardChan   chan<- error
 
 	delay utils.Provider[time.Duration]
 }
@@ -22,7 +22,7 @@ func (obs *Observer) Observe() {
 
 		_, err := obs.shardClient.Ping(ctx, &emptypb.Empty{})
 		if err != nil {
-			obs.errChan <- err
+			obs.shardChan <- err
 			return
 		}
 

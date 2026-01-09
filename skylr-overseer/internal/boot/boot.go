@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	v1 "github.com/cutlery47/skylr/skylr-overseer/internal/api/grpc/v1"
@@ -30,10 +29,7 @@ func Run() error {
 
 	grpcEndpoint = fmt.Sprintf("%s:%s", grpcHost, *port)
 
-	ovr := overseer.New(overseer.Config{
-		Shards:   []string{},
-		ShardsMu: &sync.RWMutex{},
-	})
+	ovr := overseer.New()
 
 	impl := v1.New(&v1.Config{
 		Ovr: ovr,
