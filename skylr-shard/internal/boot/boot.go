@@ -12,13 +12,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	grpcV1 "github.com/r-heap47/skylr/skylr-shard/internal/api/grpc/v1"
 	"github.com/r-heap47/skylr/skylr-shard/internal/metrics"
 	pbovr "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-overseer"
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"github.com/r-heap47/skylr/skylr-shard/internal/shard"
 	"github.com/r-heap47/skylr/skylr-shard/internal/storage/storages/noeviction"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
