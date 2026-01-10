@@ -27,6 +27,7 @@ type shard struct {
 	errChan <-chan error
 }
 
+// Config - Overseer config
 type Config struct {
 	CheckForShardFailuresDelay utils.Provider[time.Duration]
 }
