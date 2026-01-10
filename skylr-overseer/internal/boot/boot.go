@@ -11,9 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	v1 "github.com/cutlery47/skylr/skylr-overseer/internal/api/grpc/v1"
-	"github.com/cutlery47/skylr/skylr-overseer/internal/overseer"
-	pbovr "github.com/cutlery47/skylr/skylr-overseer/internal/pb/skylr-overseer"
+	v1 "github.com/r-heap47/skylr/skylr-overseer/internal/api/grpc/v1"
+	"github.com/r-heap47/skylr/skylr-overseer/internal/overseer"
+	pbovr "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-overseer"
 	"google.golang.org/grpc"
 )
 

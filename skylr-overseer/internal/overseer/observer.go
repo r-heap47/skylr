@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	pbshard "github.com/cutlery47/skylr/skylr-overseer/internal/pb/skylr-shard"
-	"github.com/cutlery47/skylr/skylr-overseer/internal/pkg/utils"
+	pbshard "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-shard"
+	"github.com/r-heap47/skylr/skylr-overseer/internal/pkg/utils"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

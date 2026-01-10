@@ -7,10 +7,10 @@ import (
 	"log"
 	"time"
 
-	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
-	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/errors"
-	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/utils"
-	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
+	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
+	"github.com/r-heap47/skylr/skylr-shard/internal/pkg/errors"
+	"github.com/r-heap47/skylr/skylr-shard/internal/pkg/utils"
+	"github.com/r-heap47/skylr/skylr-shard/internal/storage"
 	"golang.org/x/sync/errgroup"
 )
 

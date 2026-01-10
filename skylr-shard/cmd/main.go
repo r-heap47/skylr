@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/cutlery47/skylr/skylr-shard/internal/boot"
+	"github.com/r-heap47/skylr/skylr-shard/internal/boot"
 )
 
 func main() {

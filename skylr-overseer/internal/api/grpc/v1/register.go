@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	pbovr "github.com/cutlery47/skylr/skylr-overseer/internal/pb/skylr-overseer"
+	pbovr "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-overseer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"

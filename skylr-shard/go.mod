@@ -1,4 +1,4 @@
-module github.com/cutlery47/skylr/skylr-shard
+module github.com/r-heap47/skylr/skylr-shard
 
 go 1.25.0
 

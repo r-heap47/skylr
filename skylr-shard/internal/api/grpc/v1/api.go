@@ -3,10 +3,10 @@ package v1
 import (
 	"time"
 
-	"github.com/cutlery47/skylr/skylr-shard/internal/metrics"
-	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
-	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/utils"
-	"github.com/cutlery47/skylr/skylr-shard/internal/shard"
+	"github.com/r-heap47/skylr/skylr-shard/internal/metrics"
+	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
+	"github.com/r-heap47/skylr/skylr-shard/internal/pkg/utils"
+	"github.com/r-heap47/skylr/skylr-shard/internal/shard"
 )
 
 // Implementation - grpc service implementation
