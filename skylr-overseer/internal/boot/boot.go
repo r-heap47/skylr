@@ -1,6 +1,7 @@
 package boot
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	v1 "github.com/cutlery47/skylr/skylr-overseer/internal/api/grpc/v1"
 	"github.com/cutlery47/skylr/skylr-overseer/internal/overseer"
@@ -30,7 +32,9 @@ func Run() error {
 
 	grpcEndpoint = fmt.Sprintf("%s:%s", grpcHost, *port)
 
-	ovr := overseer.New()
+	ovr := overseer.New(overseer.Config{
+		CheckForShardFailuresDelay: func(_ context.Context) time.Duration { return time.Second }, // TODO: proper config
+	})
 
 	impl := v1.New(&v1.Config{
 		Ovr: ovr,

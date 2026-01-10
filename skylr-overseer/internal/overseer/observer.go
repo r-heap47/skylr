@@ -2,6 +2,8 @@ package overseer
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"time"
 
 	pbshard "github.com/cutlery47/skylr/skylr-overseer/internal/pb/skylr-shard"
@@ -11,6 +13,7 @@ import (
 
 // observer - shard monitorer
 type observer struct {
+	addr        string
 	shardClient pbshard.ShardClient
 	errChan     chan<- error // channel for sending ping errors
 
@@ -19,15 +22,22 @@ type observer struct {
 
 // observe monitors a single shard
 func (obs *observer) observe() {
-	for {
-		ctx := context.Background()
+	ctx := context.Background()
 
-		_, err := obs.shardClient.Ping(ctx, &emptypb.Empty{})
+	stream, err := obs.shardClient.Metrics(ctx, &emptypb.Empty{})
+	if err != nil {
+		obs.errChan <- fmt.Errorf("shardClient.Metrics: %w", err)
+		return
+	}
+
+	for {
+		metrics, err := stream.Recv()
 		if err != nil {
-			obs.errChan <- err
+			obs.errChan <- fmt.Errorf("stream.Recv: %w", err)
 			return
 		}
 
-		time.Sleep(obs.delay(ctx))
+		log.Printf("[INFO] Received metrics from %s: %+v\n", obs.addr, metrics)
+		log.Println("[WARN] Metric handling logic should be implemented here")
 	}
 }

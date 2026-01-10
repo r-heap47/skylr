@@ -11,13 +11,14 @@ import (
 	"github.com/cutlery47/skylr/skylr-overseer/internal/pkg/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // Overseer - Shard coordinator
 type Overseer struct {
 	shards   []shard
 	shardsMu *sync.RWMutex
+
+	checkForShardFailuresDelay utils.Provider[time.Duration]
 }
 
 // shard - Shard data used by Overseer
@@ -26,11 +27,17 @@ type shard struct {
 	errChan <-chan error
 }
 
+// Config - Overseer config
+type Config struct {
+	CheckForShardFailuresDelay utils.Provider[time.Duration]
+}
+
 // New creates new Overseer
-func New() *Overseer {
+func New(cfg Config) *Overseer {
 	ovr := &Overseer{
-		shards:   []shard{},
-		shardsMu: &sync.RWMutex{},
+		shards:                     []shard{},
+		shardsMu:                   &sync.RWMutex{},
+		checkForShardFailuresDelay: cfg.CheckForShardFailuresDelay,
 	}
 
 	// start shard failure check
@@ -45,7 +52,7 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 		return err
 	}
 
-	// check if shard by provided address is reachable and alive
+	// create grpc client for received addr
 	shardConn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -55,16 +62,10 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 	}
 
 	shardClient := pbshard.NewShardClient(shardConn)
-
-	_, err = shardClient.Ping(ctx, &emptypb.Empty{})
-	if err != nil {
-		return fmt.Errorf("couldn't ping shard: %w", err)
-	}
-
 	shardErrChan := make(chan error)
 
-	// if shard is reachable and alive - start heartbeat check
 	obs := &observer{
+		addr:        addr,
 		shardClient: shardClient,
 		errChan:     shardErrChan,
 		delay:       func(_ context.Context) time.Duration { return time.Second },
@@ -83,16 +84,33 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 
 // checkForShardFailures checks that none of the shards have disconnected
 func (ovr *Overseer) checkForShardFailures() {
-	for {
+	checkFunc := func() []shard {
+		var removed []shard
+
+		ovr.shardsMu.RLock()
+		defer ovr.shardsMu.RUnlock()
+
 		for _, shard := range ovr.shards {
 			select {
 			case err := <-shard.errChan:
-				ovr.removeShardAndReshard(shard)
-				log.Printf("[ERROR] checkForShardFailures received: %s", err)
+				removed = append(removed, shard)
+				log.Printf("[ERROR] checkFunc in checkForShardFailures received: %s", err)
 			default:
 				// do nothing
 			}
 		}
+
+		return removed
+	}
+
+	for {
+		ctx := context.Background()
+
+		for _, shard := range checkFunc() {
+			ovr.removeShardAndReshard(shard)
+		}
+
+		time.Sleep(ovr.checkForShardFailuresDelay(ctx))
 	}
 }
 

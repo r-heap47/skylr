@@ -79,30 +79,6 @@
         ]
       }
     },
-    "/api/v1/ping": {
-      "get": {
-        "summary": "=== MISC ===\nPing pongs",
-        "operationId": "Shard_Ping",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "type": "object",
-              "properties": {}
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "tags": [
-          "Shard"
-        ]
-      }
-    },
     "/api/v1/set": {
       "post": {
         "summary": "Set uploads new entry to storage",
