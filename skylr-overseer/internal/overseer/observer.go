@@ -38,5 +38,6 @@ func (obs *observer) observe() {
 		}
 
 		log.Printf("[INFO] Received metrics from %s: %+v\n", obs.addr, metrics)
+		log.Println("[WARN] Metric handling logic should be implemented here")
 	}
 }
