@@ -36,6 +36,6 @@ func (i *Implementation) Metrics(_ *emptypb.Empty, stream grpc.ServerStreamingSe
 			return status.Error(codes.Internal, fmt.Sprintf("steam.Send: %s", err))
 		}
 
-		time.Sleep(time.Second)
+		time.Sleep(i.metricsDelay(ctx))
 	}
 }

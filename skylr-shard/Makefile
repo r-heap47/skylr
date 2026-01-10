@@ -24,8 +24,9 @@ OPENAPI_OUT := $(CURDIR)/internal/pb/skylr-shard
 .PHONY: run
 run: GRPC-PORT ?= 5000
 run: GRPC-GW-PORT ?= 5001
+run: GRACEFUL ?= true
 run:
-	go run cmd/main.go --grpc-port=$(GRPC-PORT) --grpc-gw-port=$(GRPC-GW-PORT)
+	go run cmd/main.go --grpc-port=$(GRPC-PORT) --grpc-gw-port=$(GRPC-GW-PORT) --graceful=$(GRACEFUL)
 
 .PHONY: all
 all: test build lint

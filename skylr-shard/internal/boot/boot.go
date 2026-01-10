@@ -26,6 +26,7 @@ import (
 var (
 	grpcPort = flag.String("grpc-port", "5000", "Port for grpc-server to be run on (default: 5000)")
 	gwPort   = flag.String("grpc-gw-port", "5001", "Port for grpc-gateway-server to be run on (default: 5001)")
+	graceful = flag.Bool("graceful", true, "Bool flag for switching graceful shutdown (default: true)")
 )
 
 // nolint: revive
@@ -104,8 +105,9 @@ func Run() error {
 	}
 
 	impl := grpcV1.New(grpcV1.Config{
-		Shard:     shard,
-		Collector: collector,
+		Shard:        shard,
+		Collector:    collector,
+		MetricsDelay: func(_ context.Context) time.Duration { return time.Second }, // TODO: proper configuration
 	})
 
 	// === GRPC SERVER SETUP ===
@@ -189,7 +191,11 @@ func Run() error {
 	<-sigChan
 
 	log.Println("[GRPC] shutting down grpc server...")
-	grpcServer.GracefulStop()
+	if *graceful {
+		grpcServer.GracefulStop()
+	} else {
+		grpcServer.Stop()
+	}
 
 	log.Println("[GRPC] shutting down grpc-gateway server...")
 	shutdownCtx, cancel := context.WithTimeout(initCtx, 5*time.Second)
