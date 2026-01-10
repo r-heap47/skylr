@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/errors"
-	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/testutils"
-	"github.com/cutlery47/skylr/skylr-shard/internal/pkg/utils"
-	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
+	"github.com/r-heap47/skylr/skylr-shard/internal/pkg/errors"
+	"github.com/r-heap47/skylr/skylr-shard/internal/pkg/testutils"
+	"github.com/r-heap47/skylr/skylr-shard/internal/pkg/utils"
+	"github.com/r-heap47/skylr/skylr-shard/internal/storage"
 	"github.com/stretchr/testify/require"
 )
 

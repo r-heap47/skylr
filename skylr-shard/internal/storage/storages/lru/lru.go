@@ -3,7 +3,7 @@ package lru
 import (
 	"errors"
 
-	"github.com/cutlery47/skylr/skylr-shard/internal/storage"
+	"github.com/r-heap47/skylr/skylr-shard/internal/storage"
 )
 
 // New returns new LRU storage

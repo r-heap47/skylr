@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	pbshard "github.com/cutlery47/skylr/skylr-shard/internal/pb/skylr-shard"
+	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"

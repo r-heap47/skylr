@@ -1,4 +1,4 @@
-module github.com/cutlery47/skylr/skylr-overseer
+module github.com/r-heap47/skylr/skylr-overseer
 
 go 1.25.0
 

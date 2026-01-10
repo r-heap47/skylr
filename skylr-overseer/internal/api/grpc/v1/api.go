@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"github.com/cutlery47/skylr/skylr-overseer/internal/overseer"
-	pbovr "github.com/cutlery47/skylr/skylr-overseer/internal/pb/skylr-overseer"
+	"github.com/r-heap47/skylr/skylr-overseer/internal/overseer"
+	pbovr "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-overseer"
 )
 
 // Implementation - grpc service implementation
