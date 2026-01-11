@@ -68,15 +68,110 @@ func (x *RegisterRequest) GetAddress() string {
 	return ""
 }
 
+// ShardRequest - Shard request params
+type ShardRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShardRequest) Reset() {
+	*x = ShardRequest{}
+	mi := &file_skylr_overseer_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShardRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShardRequest) ProtoMessage() {}
+
+func (x *ShardRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_skylr_overseer_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShardRequest.ProtoReflect.Descriptor instead.
+func (*ShardRequest) Descriptor() ([]byte, []int) {
+	return file_skylr_overseer_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ShardRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+// ShardResponse - response for Shard request
+type ShardResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShardResponse) Reset() {
+	*x = ShardResponse{}
+	mi := &file_skylr_overseer_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShardResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShardResponse) ProtoMessage() {}
+
+func (x *ShardResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_skylr_overseer_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShardResponse.ProtoReflect.Descriptor instead.
+func (*ShardResponse) Descriptor() ([]byte, []int) {
+	return file_skylr_overseer_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ShardResponse) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
 var File_skylr_overseer_proto protoreflect.FileDescriptor
 
 const file_skylr_overseer_proto_rawDesc = "" +
 	"\n" +
 	"\x14skylr-overseer.proto\x12\x11skylr_overseer.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"+\n" +
 	"\x0fRegisterRequest\x12\x18\n" +
-	"\aaddress\x18\x01 \x01(\tR\aaddress2l\n" +
-	"\bOverseer\x12`\n" +
-	"\bRegister\x12\".skylr_overseer.v1.RegisterRequest\x1a\x16.google.protobuf.Empty\"\x18\x82\xd3\xe4\x93\x02\x12\"\x10/api/v1/registerB\x18Z\x16./skylr-overseer;pbovrb\x06proto3"
+	"\aaddress\x18\x01 \x01(\tR\aaddress\" \n" +
+	"\fShardRequest\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\")\n" +
+	"\rShardResponse\x12\x18\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress2\xd2\x01\n" +
+	"\bOverseer\x12c\n" +
+	"\bRegister\x12\".skylr_overseer.v1.RegisterRequest\x1a\x16.google.protobuf.Empty\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/api/v1/register\x12a\n" +
+	"\x05Shard\x12\x1f.skylr_overseer.v1.ShardRequest\x1a .skylr_overseer.v1.ShardResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/api/v1/shardB\x18Z\x16./skylr-overseer;pbovrb\x06proto3"
 
 var (
 	file_skylr_overseer_proto_rawDescOnce sync.Once
@@ -90,16 +185,20 @@ func file_skylr_overseer_proto_rawDescGZIP() []byte {
 	return file_skylr_overseer_proto_rawDescData
 }
 
-var file_skylr_overseer_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_skylr_overseer_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_skylr_overseer_proto_goTypes = []any{
 	(*RegisterRequest)(nil), // 0: skylr_overseer.v1.RegisterRequest
-	(*emptypb.Empty)(nil),   // 1: google.protobuf.Empty
+	(*ShardRequest)(nil),    // 1: skylr_overseer.v1.ShardRequest
+	(*ShardResponse)(nil),   // 2: skylr_overseer.v1.ShardResponse
+	(*emptypb.Empty)(nil),   // 3: google.protobuf.Empty
 }
 var file_skylr_overseer_proto_depIdxs = []int32{
 	0, // 0: skylr_overseer.v1.Overseer.Register:input_type -> skylr_overseer.v1.RegisterRequest
-	1, // 1: skylr_overseer.v1.Overseer.Register:output_type -> google.protobuf.Empty
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	1, // 1: skylr_overseer.v1.Overseer.Shard:input_type -> skylr_overseer.v1.ShardRequest
+	3, // 2: skylr_overseer.v1.Overseer.Register:output_type -> google.protobuf.Empty
+	2, // 3: skylr_overseer.v1.Overseer.Shard:output_type -> skylr_overseer.v1.ShardResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -116,7 +215,7 @@ func file_skylr_overseer_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_skylr_overseer_proto_rawDesc), len(file_skylr_overseer_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

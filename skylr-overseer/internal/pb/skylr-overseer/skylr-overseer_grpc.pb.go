@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Overseer_Register_FullMethodName = "/skylr_overseer.v1.Overseer/Register"
+	Overseer_Shard_FullMethodName    = "/skylr_overseer.v1.Overseer/Shard"
 )
 
 // OverseerClient is the client API for Overseer service.
@@ -31,6 +32,8 @@ const (
 type OverseerClient interface {
 	// Register registers a new shard in the system
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Shard returns a shard adress for given key
+	Shard(ctx context.Context, in *ShardRequest, opts ...grpc.CallOption) (*ShardResponse, error)
 }
 
 type overseerClient struct {
@@ -51,6 +54,16 @@ func (c *overseerClient) Register(ctx context.Context, in *RegisterRequest, opts
 	return out, nil
 }
 
+func (c *overseerClient) Shard(ctx context.Context, in *ShardRequest, opts ...grpc.CallOption) (*ShardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ShardResponse)
+	err := c.cc.Invoke(ctx, Overseer_Shard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OverseerServer is the server API for Overseer service.
 // All implementations must embed UnimplementedOverseerServer
 // for forward compatibility.
@@ -59,6 +72,8 @@ func (c *overseerClient) Register(ctx context.Context, in *RegisterRequest, opts
 type OverseerServer interface {
 	// Register registers a new shard in the system
 	Register(context.Context, *RegisterRequest) (*emptypb.Empty, error)
+	// Shard returns a shard adress for given key
+	Shard(context.Context, *ShardRequest) (*ShardResponse, error)
 	mustEmbedUnimplementedOverseerServer()
 }
 
@@ -71,6 +86,9 @@ type UnimplementedOverseerServer struct{}
 
 func (UnimplementedOverseerServer) Register(context.Context, *RegisterRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Register not implemented")
+}
+func (UnimplementedOverseerServer) Shard(context.Context, *ShardRequest) (*ShardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Shard not implemented")
 }
 func (UnimplementedOverseerServer) mustEmbedUnimplementedOverseerServer() {}
 func (UnimplementedOverseerServer) testEmbeddedByValue()                  {}
@@ -111,6 +129,24 @@ func _Overseer_Register_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Overseer_Shard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OverseerServer).Shard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Overseer_Shard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OverseerServer).Shard(ctx, req.(*ShardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Overseer_ServiceDesc is the grpc.ServiceDesc for Overseer service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -121,6 +157,10 @@ var Overseer_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Register",
 			Handler:    _Overseer_Register_Handler,
+		},
+		{
+			MethodName: "Shard",
+			Handler:    _Overseer_Shard_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

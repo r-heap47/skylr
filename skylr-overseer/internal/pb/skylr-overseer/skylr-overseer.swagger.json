@@ -37,7 +37,40 @@
         },
         "parameters": [
           {
-            "name": "address",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1RegisterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Overseer"
+        ]
+      }
+    },
+    "/api/v1/shard": {
+      "get": {
+        "summary": "Shard returns a shard adress for given key",
+        "operationId": "Overseer_Shard",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ShardResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
             "in": "query",
             "required": false,
             "type": "string"
@@ -77,6 +110,24 @@
           }
         }
       }
+    },
+    "v1RegisterRequest": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        }
+      },
+      "title": "RegisterRequest - register request params"
+    },
+    "v1ShardResponse": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        }
+      },
+      "title": "ShardResponse - response for Shard request"
     }
   }
 }

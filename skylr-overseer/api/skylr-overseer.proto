@@ -13,6 +13,13 @@ service Overseer {
     rpc Register(RegisterRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             post: "/api/v1/register"
+            body: "*"
+        };
+    }
+    // Shard returns a shard adress for given key
+    rpc Shard(ShardRequest) returns (ShardResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/shard"
         };
     }
 }
@@ -20,4 +27,14 @@ service Overseer {
 // RegisterRequest - register request params
 message RegisterRequest {
    string address = 1;
+}
+
+// ShardRequest - Shard request params
+message ShardRequest {
+    string key = 1;
+}
+
+// ShardResponse - response for Shard request
+message ShardResponse {
+    string address = 1;
 }

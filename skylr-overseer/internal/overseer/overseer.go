@@ -46,6 +46,18 @@ func New(cfg Config) *Overseer {
 	return ovr
 }
 
+// TODO: PROPER SHARD LOGIC
+func (ovr *Overseer) Shard(ctx context.Context, key string) (*string, error) {
+	hashed, err := utils.HashSha256(key)
+	if err != nil {
+		return nil, fmt.Errorf("utils.HashSha256: %w", err)
+	}
+
+	target := hashed % uint64(len(ovr.shards))
+
+	return &ovr.shards[target].addr, nil
+}
+
 // Register registers new Shard onto Overseer
 func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 	if err := utils.CtxDone(ctx); err != nil {
