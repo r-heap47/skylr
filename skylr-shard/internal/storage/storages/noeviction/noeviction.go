@@ -2,6 +2,7 @@ package noeviction
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -15,21 +16,34 @@ type noeviction struct {
 	store map[string]storage.Entry
 	mu    *sync.RWMutex
 
-	curTime utils.Provider[time.Time]
+	curTime         utils.Provider[time.Time]
+	cleanupTimeout  utils.Provider[time.Duration]
+	cleanupCooldown utils.Provider[time.Duration]
+
+	start <-chan struct{}
 }
 
 // Config - noeviction storage config
 type Config struct {
-	CurTime utils.Provider[time.Time]
+	CurTime         utils.Provider[time.Time]
+	CleanupTimeout  utils.Provider[time.Duration]
+	CleanupCooldown utils.Provider[time.Duration]
+	Start           <-chan struct{}
 }
 
 // New returns new noeviction storage
 func New(cfg Config) storage.Storage {
 	noev := &noeviction{
-		store:   make(map[string]storage.Entry),
-		mu:      &sync.RWMutex{},
-		curTime: cfg.CurTime,
+		store:           make(map[string]storage.Entry),
+		mu:              &sync.RWMutex{},
+		curTime:         cfg.CurTime,
+		cleanupTimeout:  cfg.CleanupTimeout,
+		cleanupCooldown: cfg.CleanupCooldown,
+		start:           cfg.Start,
 	}
+
+	// Запускаем cleanup loop в фоне
+	go noev.cleanupLoop()
 
 	return noev
 }
@@ -92,4 +106,44 @@ func (s *noeviction) Len(ctx context.Context) (int, error) {
 	defer s.mu.RUnlock()
 
 	return len(s.store), nil
+}
+
+// cleanupLoop периодически очищает expired entries
+func (s *noeviction) cleanupLoop() {
+	// Ждем сигнала старта
+	<-s.start
+
+	for {
+		ctx := context.Background()
+
+		err := s.cleanWithTimeout(ctx)
+		if err != nil {
+			// TODO: proper logging
+			log.Printf("cleanup error: %s\n", err)
+		}
+
+		time.Sleep(s.cleanupCooldown(ctx))
+	}
+}
+
+// cleanWithTimeout выполняет cleanup с timeout
+func (s *noeviction) cleanWithTimeout(ctx context.Context) error {
+	timeout := s.cleanupTimeout(ctx)
+	now := s.curTime(ctx)
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+
+	go func() {
+		errCh <- s.Clean(ctx, now)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-errCh:
+		return err
+	}
 }
