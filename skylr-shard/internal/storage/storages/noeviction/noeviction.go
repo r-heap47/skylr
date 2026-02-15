@@ -80,6 +80,20 @@ func (s *noeviction) Set(ctx context.Context, e storage.Entry) (*storage.Entry, 
 	return &e, nil
 }
 
+func (s *noeviction) Delete(ctx context.Context, k string) (bool, error) {
+	if err := utils.CtxDone(ctx); err != nil {
+		return false, err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	_, existed := s.store[k]
+	delete(s.store, k)
+
+	return existed, nil
+}
+
 func (s *noeviction) Clean(ctx context.Context, now time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

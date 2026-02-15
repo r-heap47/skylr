@@ -87,3 +87,9 @@ func (sh *Shard) Set(ctx context.Context, in *pbshard.InputEntry) error {
 	_, err := sh.storage.Set(ctx, entry)
 	return err
 }
+
+// Delete removes entry from storage by key
+// Returns whether the key existed before deletion
+func (sh *Shard) Delete(ctx context.Context, k string) (bool, error) {
+	return sh.storage.Delete(ctx, k)
+}

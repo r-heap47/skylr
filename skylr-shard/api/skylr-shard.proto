@@ -25,6 +25,12 @@ service Shard {
             body: "*"
         };
     }
+    // Delete removes entry by provided key
+    rpc Delete(DeleteRequest) returns (DeleteResponse) {
+        option (google.api.http) = {
+            delete: "/api/v1/delete"
+        };
+    }
 
     // === METRICS ===
 
@@ -53,6 +59,19 @@ message SetRequest {
 
 // SetResponse - set request response
 message SetResponse {
+}
+
+// DeleteRequest - delete request params
+message DeleteRequest {
+    string key = 1;
+}
+
+// DeleteResponse - delete response
+message DeleteResponse {
+    // deleted indicates whether the key existed and was deleted
+    // true - key existed and was deleted
+    // false - key did not exist (no-op)
+    bool deleted = 1;
 }
 
 // Entry - storage entry
