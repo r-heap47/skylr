@@ -62,46 +62,20 @@ func Run() error {
 		return 5 * time.Second
 	}
 
-	storageStr := noeviction.New[string](noeviction.Config{
-		CurTime: curTime,
-	})
-
-	storageInt64 := noeviction.New[int64](noeviction.Config{
-		CurTime: curTime,
-	})
-
-	storageInt32 := noeviction.New[int32](noeviction.Config{
-		CurTime: curTime,
-	})
-
-	storageFloat64 := noeviction.New[float64](noeviction.Config{
-		CurTime: curTime,
-	})
-
-	storageFloat32 := noeviction.New[float32](noeviction.Config{
+	storage := noeviction.New(noeviction.Config{
 		CurTime: curTime,
 	})
 
 	shard := shard.New(shard.Config{
-		StorageStr:     storageStr,
-		StorageInt64:   storageInt64,
-		StorageInt32:   storageInt32,
-		StorageFloat64: storageFloat64,
-		StorageFloat32: storageFloat32,
-
+		Storage:         storage,
 		CurTime:         curTime,
 		CleanupTimeout:  cleanupTimeout,
 		CleanupCooldown: cleanupCooldown,
-
-		Start: startCh,
+		Start:           startCh,
 	})
 
 	collector := &metrics.Collector{
-		StorageStr:     storageStr,
-		StorageInt64:   storageInt64,
-		StorageInt32:   storageInt32,
-		StorageFloat64: storageFloat64,
-		StorageFloat32: storageFloat32,
+		Storage: storage,
 	}
 
 	impl := grpcV1.New(grpcV1.Config{

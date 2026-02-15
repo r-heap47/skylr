@@ -8,6 +8,6 @@ import (
 
 // New returns new LFU storage
 // TODO: impl
-func New[T storage.Storable]() (storage.Storage[T], error) {
+func New() (storage.Storage, error) {
 	return nil, errors.New("not implemented")
 }

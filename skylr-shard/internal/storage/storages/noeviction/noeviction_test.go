@@ -24,12 +24,12 @@ func TestSet(t *testing.T) {
 			ttl = 5 * time.Second
 		)
 
-		store := New[string](Config{
+		store := New(Config{
 			CurTime: utils.Const(now),
 		})
 		require.NotNil(t, store)
 
-		entry := storage.Entry[string]{
+		entry := storage.Entry{
 			K:   "key",
 			V:   "value",
 			Exp: now.Add(ttl),
@@ -50,10 +50,10 @@ func TestSet(t *testing.T) {
 			ttl         = 5 * time.Second
 		)
 
-		store := New[string](Config{})
+		store := New(Config{})
 		require.NotNil(t, store)
 
-		entry := storage.Entry[string]{
+		entry := storage.Entry{
 			K:   "key",
 			V:   "value",
 			Exp: now.Add(ttl),
@@ -81,12 +81,12 @@ func TestGet(t *testing.T) {
 			ttl = 5 * time.Second
 		)
 
-		store := New[string](Config{
+		store := New(Config{
 			CurTime: utils.Const(now),
 		})
 		require.NotNil(t, store)
 
-		entry := storage.Entry[string]{
+		entry := storage.Entry{
 			K:   "key",
 			V:   "value",
 			Exp: now.Add(ttl),
@@ -108,10 +108,10 @@ func TestGet(t *testing.T) {
 			ctx, cancel = context.WithCancel(t.Context())
 		)
 
-		store := New[string](Config{})
+		store := New(Config{})
 		require.NotNil(t, store)
 
-		entry := storage.Entry[string]{
+		entry := storage.Entry{
 			K: "key",
 		}
 
@@ -131,7 +131,7 @@ func TestGet(t *testing.T) {
 			ctx = t.Context()
 		)
 
-		store := New[string](Config{})
+		store := New(Config{})
 		require.NotNil(t, store)
 
 		got, err := store.Get(ctx, "k")
@@ -148,12 +148,12 @@ func TestGet(t *testing.T) {
 			exp = testutils.MustParseDate(t, "2025-01-01")
 		)
 
-		store := New[string](Config{
+		store := New(Config{
 			CurTime: utils.Const(exp.Add(time.Second)),
 		})
 		require.NotNil(t, store)
 
-		entry := storage.Entry[string]{
+		entry := storage.Entry{
 			K:   "key",
 			V:   "value",
 			Exp: exp,
