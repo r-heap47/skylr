@@ -63,15 +63,15 @@ func Run() error {
 	}
 
 	storage := noeviction.New(noeviction.Config{
-		CurTime: curTime,
-	})
-
-	shard := shard.New(shard.Config{
-		Storage:         storage,
 		CurTime:         curTime,
 		CleanupTimeout:  cleanupTimeout,
 		CleanupCooldown: cleanupCooldown,
 		Start:           startCh,
+	})
+
+	shard := shard.New(shard.Config{
+		Storage: storage,
+		CurTime: curTime,
 	})
 
 	collector := &metrics.Collector{

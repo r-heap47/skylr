@@ -19,13 +19,17 @@ func TestSet(t *testing.T) {
 		t.Parallel()
 
 		var (
-			ctx = t.Context()
-			now = testutils.MustParseDate(t, "2025-01-01")
-			ttl = 5 * time.Second
+			ctx     = t.Context()
+			now     = testutils.MustParseDate(t, "2025-01-01")
+			ttl     = 5 * time.Second
+			startCh = make(chan struct{})
 		)
 
 		store := New(Config{
-			CurTime: utils.Const(now),
+			CurTime:         utils.Const(now),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           startCh,
 		})
 		require.NotNil(t, store)
 
@@ -48,9 +52,15 @@ func TestSet(t *testing.T) {
 			ctx, cancel = context.WithCancel(t.Context())
 			now         = testutils.MustParseDate(t, "2025-01-01")
 			ttl         = 5 * time.Second
+			startCh     = make(chan struct{})
 		)
 
-		store := New(Config{})
+		store := New(Config{
+			CurTime:         utils.Const(now),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           startCh,
+		})
 		require.NotNil(t, store)
 
 		entry := storage.Entry{
@@ -76,13 +86,17 @@ func TestGet(t *testing.T) {
 		t.Parallel()
 
 		var (
-			ctx = t.Context()
-			now = testutils.MustParseDate(t, "2025-01-01")
-			ttl = 5 * time.Second
+			ctx     = t.Context()
+			now     = testutils.MustParseDate(t, "2025-01-01")
+			ttl     = 5 * time.Second
+			startCh = make(chan struct{})
 		)
 
 		store := New(Config{
-			CurTime: utils.Const(now),
+			CurTime:         utils.Const(now),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           startCh,
 		})
 		require.NotNil(t, store)
 
@@ -106,9 +120,15 @@ func TestGet(t *testing.T) {
 
 		var (
 			ctx, cancel = context.WithCancel(t.Context())
+			startCh     = make(chan struct{})
 		)
 
-		store := New(Config{})
+		store := New(Config{
+			CurTime:         utils.Const(time.Now()),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           startCh,
+		})
 		require.NotNil(t, store)
 
 		entry := storage.Entry{
@@ -128,10 +148,16 @@ func TestGet(t *testing.T) {
 		t.Parallel()
 
 		var (
-			ctx = t.Context()
+			ctx     = t.Context()
+			startCh = make(chan struct{})
 		)
 
-		store := New(Config{})
+		store := New(Config{
+			CurTime:         utils.Const(time.Now()),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           startCh,
+		})
 		require.NotNil(t, store)
 
 		got, err := store.Get(ctx, "k")
@@ -144,12 +170,16 @@ func TestGet(t *testing.T) {
 		t.Parallel()
 
 		var (
-			ctx = t.Context()
-			exp = testutils.MustParseDate(t, "2025-01-01")
+			ctx     = t.Context()
+			exp     = testutils.MustParseDate(t, "2025-01-01")
+			startCh = make(chan struct{})
 		)
 
 		store := New(Config{
-			CurTime: utils.Const(exp.Add(time.Second)),
+			CurTime:         utils.Const(exp.Add(time.Second)),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           startCh,
 		})
 		require.NotNil(t, store)
 
