@@ -11,8 +11,8 @@ import (
 )
 
 // noeviction - key-value storage without eviction
-type noeviction[T storage.Storable] struct {
-	store map[string]storage.Entry[T]
+type noeviction struct {
+	store map[string]storage.Entry
 	mu    *sync.RWMutex
 
 	curTime utils.Provider[time.Time]
@@ -24,9 +24,9 @@ type Config struct {
 }
 
 // New returns new noeviction storage
-func New[T storage.Storable](cfg Config) storage.Storage[T] {
-	noev := &noeviction[T]{
-		store:   make(map[string]storage.Entry[T]),
+func New(cfg Config) storage.Storage {
+	noev := &noeviction{
+		store:   make(map[string]storage.Entry),
 		mu:      &sync.RWMutex{},
 		curTime: cfg.CurTime,
 	}
@@ -34,7 +34,7 @@ func New[T storage.Storable](cfg Config) storage.Storage[T] {
 	return noev
 }
 
-func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], error) {
+func (s *noeviction) Get(ctx context.Context, k string) (*storage.Entry, error) {
 	if err := utils.CtxDone(ctx); err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (s *noeviction[T]) Get(ctx context.Context, k string) (*storage.Entry[T], e
 	return &entry, nil
 }
 
-func (s *noeviction[T]) Set(ctx context.Context, e storage.Entry[T]) (*storage.Entry[T], error) {
+func (s *noeviction) Set(ctx context.Context, e storage.Entry) (*storage.Entry, error) {
 	if err := utils.CtxDone(ctx); err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (s *noeviction[T]) Set(ctx context.Context, e storage.Entry[T]) (*storage.E
 	return &e, nil
 }
 
-func (s *noeviction[T]) Clean(ctx context.Context, now time.Time) error {
+func (s *noeviction) Clean(ctx context.Context, now time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -83,7 +83,7 @@ func (s *noeviction[T]) Clean(ctx context.Context, now time.Time) error {
 	return nil
 }
 
-func (s *noeviction[T]) Len(ctx context.Context) (int, error) {
+func (s *noeviction) Len(ctx context.Context) (int, error) {
 	if err := utils.CtxDone(ctx); err != nil {
 		return 0, err
 	}

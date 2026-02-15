@@ -2,25 +2,18 @@ package shard
 
 import (
 	"context"
-	stderrs "errors"
 	"fmt"
 	"log"
 	"time"
 
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
-	"github.com/r-heap47/skylr/skylr-shard/internal/pkg/errors"
 	"github.com/r-heap47/skylr/skylr-shard/internal/pkg/utils"
 	"github.com/r-heap47/skylr/skylr-shard/internal/storage"
-	"golang.org/x/sync/errgroup"
 )
 
 // Shard - basically a shard...
 type Shard struct {
-	storageStr     storage.Storage[string]
-	storageInt64   storage.Storage[int64]
-	storageInt32   storage.Storage[int32]
-	storageFloat64 storage.Storage[float64]
-	storageFloat32 storage.Storage[float32]
+	storage storage.Storage
 
 	curTime         utils.Provider[time.Time]
 	cleanupTimeout  utils.Provider[time.Duration]
@@ -31,11 +24,7 @@ type Shard struct {
 
 // Config - shard config
 type Config struct {
-	StorageStr     storage.Storage[string]
-	StorageInt64   storage.Storage[int64]
-	StorageInt32   storage.Storage[int32]
-	StorageFloat64 storage.Storage[float64]
-	StorageFloat32 storage.Storage[float32]
+	Storage storage.Storage
 
 	CurTime         utils.Provider[time.Time]
 	CleanupTimeout  utils.Provider[time.Duration] // cooldown between cleanups
@@ -47,11 +36,7 @@ type Config struct {
 // New creates a new shard
 func New(cfg Config) *Shard {
 	sh := &Shard{
-		storageStr:      cfg.StorageStr,
-		storageInt64:    cfg.StorageInt64,
-		storageInt32:    cfg.StorageInt32,
-		storageFloat64:  cfg.StorageFloat64,
-		storageFloat32:  cfg.StorageFloat32,
+		storage:         cfg.Storage,
 		curTime:         cfg.CurTime,
 		cleanupCooldown: cfg.CleanupCooldown,
 		cleanupTimeout:  cfg.CleanupTimeout,
@@ -68,150 +53,57 @@ func New(cfg Config) *Shard {
 
 // Get searches for entry in each storage by provided key
 func (sh *Shard) Get(ctx context.Context, k string) (*pbshard.Entry, error) {
-	var (
-		entry = pbshard.Entry{
-			Key: k,
-		}
-
-		entryStr     *storage.Entry[string]
-		entryInt64   *storage.Entry[int64]
-		entryInt32   *storage.Entry[int32]
-		entryFloat64 *storage.Entry[float64]
-		entryFloat32 *storage.Entry[float32]
-
-		eg, egCtx = errgroup.WithContext(ctx)
-	)
-
-	// concurrently check for the entry in each typed storage
-	// if entry was not found in one of the storages - continue searching
-
-	eg.Go(func() error {
-		gotStr, err := sh.storageStr.Get(egCtx, k)
-		if err != nil && !stderrs.Is(err, errors.ErrNotFound) {
-			return fmt.Errorf("storageString.Get: %w", err)
-		}
-		entryStr = gotStr
-
-		return nil
-	})
-
-	eg.Go(func() error {
-		gotInt64, err := sh.storageInt64.Get(egCtx, k)
-		if err != nil && !stderrs.Is(err, errors.ErrNotFound) {
-			return fmt.Errorf("storageInt64.Get: %w", err)
-		}
-		entryInt64 = gotInt64
-
-		return nil
-	})
-
-	eg.Go(func() error {
-		gotInt32, err := sh.storageInt32.Get(egCtx, k)
-		if err != nil && !stderrs.Is(err, errors.ErrNotFound) {
-			return fmt.Errorf("storageInt32.Get: %w", err)
-		}
-		entryInt32 = gotInt32
-
-		return nil
-	})
-
-	eg.Go(func() error {
-		gotFloat64, err := sh.storageFloat64.Get(egCtx, k)
-		if err != nil && !stderrs.Is(err, errors.ErrNotFound) {
-			return fmt.Errorf("storageFloat64.Get: %w", err)
-		}
-		entryFloat64 = gotFloat64
-
-		return nil
-	})
-
-	eg.Go(func() error {
-		gotFloat32, err := sh.storageFloat32.Get(egCtx, k)
-		if err != nil && !stderrs.Is(err, errors.ErrNotFound) {
-			return fmt.Errorf("storageFloat32.Get: %w", err)
-		}
-		entryFloat32 = gotFloat32
-
-		return nil
-	})
-
-	err := eg.Wait()
+	entry, err := sh.storage.Get(ctx, k)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("storage.Get: %w", err)
 	}
 
-	switch {
-	case entryStr != nil:
-		entry.Value = &pbshard.Entry_ValueStr{
-			ValueStr: entryStr.V,
-		}
-	case entryInt64 != nil:
-		entry.Value = &pbshard.Entry_ValueInt64{
-			ValueInt64: entryInt64.V,
-		}
-	case entryInt32 != nil:
-		entry.Value = &pbshard.Entry_ValueInt32{
-			ValueInt32: entryInt32.V,
-		}
-	case entryFloat64 != nil:
-		entry.Value = &pbshard.Entry_ValueDouble{
-			ValueDouble: entryFloat64.V,
-		}
-	case entryFloat32 != nil:
-		entry.Value = &pbshard.Entry_ValueFloat{
-			ValueFloat: entryFloat32.V,
-		}
+	pbEntry := &pbshard.Entry{Key: entry.K}
+
+	// Type assertion для конвертации any → protobuf oneof
+	switch v := entry.V.(type) {
+	case string:
+		pbEntry.Value = &pbshard.Entry_ValueStr{ValueStr: v}
+	case int64:
+		pbEntry.Value = &pbshard.Entry_ValueInt64{ValueInt64: v}
+	case int32:
+		pbEntry.Value = &pbshard.Entry_ValueInt32{ValueInt32: v}
+	case float64:
+		pbEntry.Value = &pbshard.Entry_ValueDouble{ValueDouble: v}
+	case float32:
+		pbEntry.Value = &pbshard.Entry_ValueFloat{ValueFloat: v}
 	default:
-		return nil, errors.ErrNotFound
+		return nil, fmt.Errorf("unsupported value type: %T", v)
 	}
 
-	return &entry, nil
+	return pbEntry, nil
 }
 
 // Set uploads new entry to storage
 func (sh *Shard) Set(ctx context.Context, in *pbshard.InputEntry) error {
-	var (
-		err error
-		// calc expiration time
-		exp   = sh.curTime(ctx).Add(in.Ttl.AsDuration())
-		entry = in.Entry
-	)
-
-	switch val := entry.Value.(type) {
-	case *pbshard.Entry_ValueStr:
-		_, err = sh.storageStr.Set(ctx, storage.Entry[string]{
-			K:   entry.Key,
-			V:   val.ValueStr,
-			Exp: exp,
-		})
-	case *pbshard.Entry_ValueInt64:
-		_, err = sh.storageInt64.Set(ctx, storage.Entry[int64]{
-			K:   entry.Key,
-			V:   val.ValueInt64,
-			Exp: exp,
-		})
-	case *pbshard.Entry_ValueInt32:
-		_, err = sh.storageInt32.Set(ctx, storage.Entry[int32]{
-			K:   entry.Key,
-			V:   val.ValueInt32,
-			Exp: exp,
-		})
-	case *pbshard.Entry_ValueDouble:
-		_, err = sh.storageFloat64.Set(ctx, storage.Entry[float64]{
-			K:   entry.Key,
-			V:   val.ValueDouble,
-			Exp: exp,
-		})
-	case *pbshard.Entry_ValueFloat:
-		_, err = sh.storageFloat32.Set(ctx, storage.Entry[float32]{
-			K:   entry.Key,
-			V:   val.ValueFloat,
-			Exp: exp,
-		})
-	default:
-		return stderrs.New("couldn't determine value type")
+	exp := sh.curTime(ctx).Add(in.Ttl.AsDuration())
+	entry := storage.Entry{
+		K:   in.Entry.Key,
+		Exp: exp,
 	}
 
+	// Извлекаем конкретное значение из protobuf oneof
+	switch val := in.Entry.Value.(type) {
+	case *pbshard.Entry_ValueStr:
+		entry.V = val.ValueStr
+	case *pbshard.Entry_ValueInt64:
+		entry.V = val.ValueInt64
+	case *pbshard.Entry_ValueInt32:
+		entry.V = val.ValueInt32
+	case *pbshard.Entry_ValueDouble:
+		entry.V = val.ValueDouble
+	case *pbshard.Entry_ValueFloat:
+		entry.V = val.ValueFloat
+	default:
+		return fmt.Errorf("unsupported value type")
+	}
+
+	_, err := sh.storage.Set(ctx, entry)
 	return err
 }
 
@@ -235,41 +127,18 @@ func (sh *Shard) cleanup() {
 
 // clean cleans each storage
 func (sh *Shard) clean(ctx context.Context) error {
-	var (
-		timeout = sh.cleanupTimeout(ctx)
-		now     = sh.curTime(ctx)
-
-		// recieves error/nil if cleanup finished
-		errCh = make(chan error)
-	)
+	timeout := sh.cleanupTimeout(ctx)
+	now := sh.curTime(ctx)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	errCh := make(chan error, 1)
+
 	go func() {
-		// performing cleanup for each storage in a separate goroutime
-		eg, egCtx := errgroup.WithContext(ctx)
-
-		eg.Go(func() error {
-			return sh.storageFloat32.Clean(egCtx, now)
-		})
-		eg.Go(func() error {
-			return sh.storageFloat64.Clean(egCtx, now)
-		})
-		eg.Go(func() error {
-			return sh.storageInt32.Clean(egCtx, now)
-		})
-		eg.Go(func() error {
-			return sh.storageInt64.Clean(egCtx, now)
-		})
-		eg.Go(func() error {
-			return sh.storageStr.Clean(egCtx, now)
-		})
-
-		errCh <- eg.Wait()
+		errCh <- sh.storage.Clean(ctx, now)
 	}()
 
-	// waiting either for ctx to timeout or for errgroup to finish
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

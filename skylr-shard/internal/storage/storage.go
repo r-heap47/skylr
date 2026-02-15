@@ -5,17 +5,12 @@ import (
 	"time"
 )
 
-// Storable - set of types, that can be stored as values in the storage
-type Storable interface {
-	string | int32 | int64 | float32 | float64
-}
-
 // Storage - abstraction over key-value storage
-type Storage[T Storable] interface {
+type Storage interface {
 	// Get returns entry by key k from the storage
-	Get(ctx context.Context, k string) (*Entry[T], error)
+	Get(ctx context.Context, k string) (*Entry, error)
 	// Set creates/updates key-value pair in the storage
-	Set(ctx context.Context, e Entry[T]) (*Entry[T], error)
+	Set(ctx context.Context, e Entry) (*Entry, error)
 	// Clean cleans up expired entries
 	Clean(ctx context.Context, now time.Time) error
 	// Len returns the amount of elements in storage
@@ -23,9 +18,9 @@ type Storage[T Storable] interface {
 }
 
 // Entry - key-value pair with additional data
-type Entry[T Storable] struct {
+type Entry struct {
 	K string
-	V T
+	V any
 	// expiration time
 	Exp time.Time
 }

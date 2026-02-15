@@ -29,11 +29,7 @@ type shardTestSuite struct {
 	timeoutCalled  atomic.Int64
 	cooldownCalled atomic.Int64
 
-	storageStr     storage.Storage[string]
-	storageInt64   storage.Storage[int64]
-	storageInt32   storage.Storage[int32]
-	storageFloat64 storage.Storage[float64]
-	storageFloat32 storage.Storage[float32]
+	storage storage.Storage
 
 	sh *Shard
 
@@ -72,44 +68,18 @@ func (s *shardTestSuite) SetupTest() {
 		return *s.cooldown
 	}
 
-	storageStr := noeviction.New[string](noeviction.Config{
+	storage := noeviction.New(noeviction.Config{
 		CurTime: curTime,
 	})
 
-	storageInt64 := noeviction.New[int64](noeviction.Config{
-		CurTime: curTime,
-	})
-
-	storageInt32 := noeviction.New[int32](noeviction.Config{
-		CurTime: curTime,
-	})
-
-	storageFloat64 := noeviction.New[float64](noeviction.Config{
-		CurTime: curTime,
-	})
-
-	storageFloat32 := noeviction.New[float32](noeviction.Config{
-		CurTime: curTime,
-	})
-
-	s.storageStr = storageStr
-	s.storageInt32 = storageInt32
-	s.storageInt64 = storageInt64
-	s.storageFloat32 = storageFloat32
-	s.storageFloat64 = storageFloat64
+	s.storage = storage
 
 	shard := New(Config{
-		StorageStr:     storageStr,
-		StorageInt64:   storageInt64,
-		StorageInt32:   storageInt32,
-		StorageFloat64: storageFloat64,
-		StorageFloat32: storageFloat32,
-
+		Storage:         storage,
 		CurTime:         curTime,
 		CleanupTimeout:  cleanupTimeout,
 		CleanupCooldown: cleanupCooldown,
-
-		Start: startCh,
+		Start:           startCh,
 	})
 
 	s.sh = shard
@@ -134,36 +104,36 @@ func (s *shardTestSuite) TestClean_Success() {
 		exp = now.Add(100 * time.Microsecond)
 	)
 
-	_, err := s.storageFloat32.Set(ctx, storage.Entry[float32]{
-		K:   "key",
-		V:   1,
+	_, err := s.storage.Set(ctx, storage.Entry{
+		K:   "key1",
+		V:   float32(1),
 		Exp: exp,
 	})
 	s.Require().NoError(err)
 
-	_, err = s.storageFloat64.Set(ctx, storage.Entry[float64]{
-		K:   "key",
-		V:   1,
+	_, err = s.storage.Set(ctx, storage.Entry{
+		K:   "key2",
+		V:   float64(1),
 		Exp: exp,
 	})
 	s.Require().NoError(err)
 
-	_, err = s.storageInt32.Set(ctx, storage.Entry[int32]{
-		K:   "key",
-		V:   1,
+	_, err = s.storage.Set(ctx, storage.Entry{
+		K:   "key3",
+		V:   int32(1),
 		Exp: exp,
 	})
 	s.Require().NoError(err)
 
-	_, err = s.storageInt64.Set(ctx, storage.Entry[int64]{
-		K:   "key",
-		V:   1,
+	_, err = s.storage.Set(ctx, storage.Entry{
+		K:   "key4",
+		V:   int64(1),
 		Exp: exp,
 	})
 	s.Require().NoError(err)
 
-	_, err = s.storageStr.Set(ctx, storage.Entry[string]{
-		K:   "key",
+	_, err = s.storage.Set(ctx, storage.Entry{
+		K:   "key5",
 		V:   "val",
 		Exp: exp,
 	})
@@ -174,11 +144,9 @@ func (s *shardTestSuite) TestClean_Success() {
 	err = s.sh.clean(ctx)
 	s.Require().NoError(err)
 
-	s.Require().Zero(s.storageFloat32.Len(ctx))
-	s.Require().Zero(s.storageFloat64.Len(ctx))
-	s.Require().Zero(s.storageInt32.Len(ctx))
-	s.Require().Zero(s.storageInt64.Len(ctx))
-	s.Require().Zero(s.storageStr.Len(ctx))
+	length, err := s.storage.Len(ctx)
+	s.Require().NoError(err)
+	s.Require().Zero(length)
 }
 
 func (s *shardTestSuite) TestClean_CtxCancelled() {
