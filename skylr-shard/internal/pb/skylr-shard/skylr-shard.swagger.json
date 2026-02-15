@@ -80,22 +80,13 @@
     },
     "/api/v1/metrics": {
       "get": {
-        "summary": "Metrics streams service metrics",
+        "summary": "Metrics returns current service metrics",
         "operationId": "Shard_Metrics",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "A successful response.",
             "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/v1MetricsResponse"
-                },
-                "error": {
-                  "$ref": "#/definitions/rpcStatus"
-                }
-              },
-              "title": "Stream result of v1MetricsResponse"
+              "$ref": "#/definitions/v1MetricsResponse"
             }
           },
           "default": {
@@ -244,15 +235,41 @@
     "v1MetricsResponse": {
       "type": "object",
       "properties": {
-        "numElements": {
-          "type": "string",
-          "format": "int64"
-        },
         "cpuUsage": {
           "type": "number",
-          "format": "double"
+          "format": "double",
+          "title": "system"
+        },
+        "memoryRssBytes": {
+          "type": "string",
+          "format": "uint64",
+          "title": "process RSS (what OS/OOM killer sees)"
+        },
+        "memoryHeapAllocBytes": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Go heap live objects (diagnostics)"
+        },
+        "totalGets": {
+          "type": "string",
+          "format": "uint64",
+          "title": "throughput (cumulative counters, Overseer computes rates)"
+        },
+        "totalSets": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalDeletes": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "uptimeSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "uptime"
         }
-      }
+      },
+      "title": "MetricsResponse - service metrics snapshot"
     },
     "v1SetRequest": {
       "type": "object",

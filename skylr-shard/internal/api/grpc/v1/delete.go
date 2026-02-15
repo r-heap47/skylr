@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/r-heap47/skylr/skylr-shard/internal/metrics"
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -12,6 +13,8 @@ import (
 
 // Delete removes entry by provided key
 func (i *Implementation) Delete(ctx context.Context, req *pbshard.DeleteRequest) (*pbshard.DeleteResponse, error) {
+	defer metrics.IncDeleteOps()
+
 	if err := validateDeleteRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

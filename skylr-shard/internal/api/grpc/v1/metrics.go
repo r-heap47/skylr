@@ -1,41 +1,54 @@
 package v1
 
 import (
+	"context"
 	"fmt"
-	"time"
 
+	"github.com/r-heap47/skylr/skylr-shard/internal/metrics"
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
-	"google.golang.org/grpc"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// Metrics .
-func (i *Implementation) Metrics(_ *emptypb.Empty, stream grpc.ServerStreamingServer[pbshard.MetricsResponse]) error {
-	ctx := stream.Context()
+// Metrics returns current service metrics
+func (i *Implementation) Metrics(ctx context.Context, _ *emptypb.Empty) (*pbshard.MetricsResponse, error) {
+	var (
+		cpuUsage  float64
+		rss       uint64
+		heapAlloc uint64
+	)
 
-	for {
-		var res pbshard.MetricsResponse
+	g, ctx := errgroup.WithContext(ctx)
 
-		numElements, err := i.collector.NumElements(ctx)
-		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("collector.NumElements: %s", err))
-		}
+	g.Go(func() error {
+		v, err := i.collector.UsageCPU(ctx)
+		cpuUsage = v
+		return err
+	})
+	g.Go(func() error {
+		v, err := i.collector.MemoryRSS(ctx)
+		rss = v
+		return err
+	})
+	g.Go(func() error {
+		v, err := i.collector.MemoryHeapAlloc(ctx)
+		heapAlloc = v
+		return err
+	})
 
-		cpuUsage, err := i.collector.UsageCPU(ctx)
-		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("collector.UsageCPU: %s", err))
-		}
-
-		res.NumElements = int64(numElements)
-		res.CpuUsage = cpuUsage
-
-		err = stream.Send(&res)
-		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("steam.Send: %s", err))
-		}
-
-		time.Sleep(i.metricsDelay(ctx))
+	if err := g.Wait(); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("metrics collection: %s", err))
 	}
+
+	return &pbshard.MetricsResponse{
+		CpuUsage:             cpuUsage,
+		MemoryRssBytes:       rss,
+		MemoryHeapAllocBytes: heapAlloc,
+		TotalGets:            metrics.TotalGets(),
+		TotalSets:            metrics.TotalSets(),
+		TotalDeletes:         metrics.TotalDeletes(),
+		UptimeSeconds:        i.collector.Uptime(),
+	}, nil
 }

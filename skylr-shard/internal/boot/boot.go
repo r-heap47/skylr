@@ -74,14 +74,11 @@ func Run() error {
 		CurTime: curTime,
 	})
 
-	collector := &metrics.Collector{
-		Storage: storage,
-	}
+	collector := metrics.NewCollector(time.Now())
 
 	impl := grpcV1.New(grpcV1.Config{
-		Shard:        shard,
-		Collector:    collector,
-		MetricsDelay: func(_ context.Context) time.Duration { return time.Second }, // TODO: proper configuration
+		Shard:     shard,
+		Collector: collector,
 	})
 
 	// === GRPC SERVER SETUP ===
