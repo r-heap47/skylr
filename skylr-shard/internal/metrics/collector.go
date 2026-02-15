@@ -33,7 +33,7 @@ func (c *Collector) UsageCPU(ctx context.Context) (float64, error) {
 
 // MemoryRSS returns process RSS (Resident Set Size) memory in bytes
 func (c *Collector) MemoryRSS(ctx context.Context) (uint64, error) {
-	p, err := process.NewProcessWithContext(ctx, int32(os.Getpid()))
+	p, err := process.NewProcessWithContext(ctx, int32(os.Getpid())) // nolint: gosec
 	if err != nil {
 		return 0, fmt.Errorf("process.NewProcessWithContext: %w", err)
 	}
@@ -47,7 +47,7 @@ func (c *Collector) MemoryRSS(ctx context.Context) (uint64, error) {
 }
 
 // MemoryHeapAlloc returns Go heap allocated bytes (live objects only)
-func (c *Collector) MemoryHeapAlloc(ctx context.Context) (uint64, error) {
+func (c *Collector) MemoryHeapAlloc(_ context.Context) (uint64, error) {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	return m.HeapAlloc, nil

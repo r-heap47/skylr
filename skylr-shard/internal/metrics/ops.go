@@ -18,10 +18,10 @@ func IncSetOps() { setOps.Add(1) }
 func IncDeleteOps() { deleteOps.Add(1) }
 
 // TotalGets returns the total number of get operations
-func TotalGets() uint64 { return uint64(getOps.Load()) }
+func TotalGets() uint64 { return uint64(getOps.Load()) } // nolint: gosec
 
 // TotalSets returns the total number of set operations
-func TotalSets() uint64 { return uint64(setOps.Load()) }
+func TotalSets() uint64 { return uint64(setOps.Load()) } // nolint: gosec
 
 // TotalDeletes returns the total number of delete operations
-func TotalDeletes() uint64 { return uint64(deleteOps.Load()) }
+func TotalDeletes() uint64 { return uint64(deleteOps.Load()) } // nolint: gosec
