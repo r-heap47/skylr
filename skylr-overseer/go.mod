@@ -3,6 +3,7 @@ module github.com/r-heap47/skylr/skylr-overseer
 go 1.25.0
 
 require (
+	github.com/golang/protobuf v1.5.4
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3
 	google.golang.org/genproto/googleapis/api v0.0.0-20251022142026-3a174f9686a8
 	google.golang.org/grpc v1.77.0

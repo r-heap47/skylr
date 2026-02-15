@@ -38,8 +38,8 @@ type ShardClient interface {
 	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 	// Delete removes entry by provided key
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
-	// Metrics streams service metrics
-	Metrics(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MetricsResponse], error)
+	// Metrics returns current service metrics
+	Metrics(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*MetricsResponse, error)
 }
 
 type shardClient struct {
@@ -80,24 +80,15 @@ func (c *shardClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grp
 	return out, nil
 }
 
-func (c *shardClient) Metrics(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MetricsResponse], error) {
+func (c *shardClient) Metrics(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*MetricsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Shard_ServiceDesc.Streams[0], Shard_Metrics_FullMethodName, cOpts...)
+	out := new(MetricsResponse)
+	err := c.cc.Invoke(ctx, Shard_Metrics_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[empty.Empty, MetricsResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
+	return out, nil
 }
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Shard_MetricsClient = grpc.ServerStreamingClient[MetricsResponse]
 
 // ShardServer is the server API for Shard service.
 // All implementations must embed UnimplementedShardServer
@@ -111,8 +102,8 @@ type ShardServer interface {
 	Set(context.Context, *SetRequest) (*empty.Empty, error)
 	// Delete removes entry by provided key
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
-	// Metrics streams service metrics
-	Metrics(*empty.Empty, grpc.ServerStreamingServer[MetricsResponse]) error
+	// Metrics returns current service metrics
+	Metrics(context.Context, *empty.Empty) (*MetricsResponse, error)
 	mustEmbedUnimplementedShardServer()
 }
 
@@ -132,8 +123,8 @@ func (UnimplementedShardServer) Set(context.Context, *SetRequest) (*empty.Empty,
 func (UnimplementedShardServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedShardServer) Metrics(*empty.Empty, grpc.ServerStreamingServer[MetricsResponse]) error {
-	return status.Error(codes.Unimplemented, "method Metrics not implemented")
+func (UnimplementedShardServer) Metrics(context.Context, *empty.Empty) (*MetricsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Metrics not implemented")
 }
 func (UnimplementedShardServer) mustEmbedUnimplementedShardServer() {}
 func (UnimplementedShardServer) testEmbeddedByValue()               {}
@@ -210,16 +201,23 @@ func _Shard_Delete_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Shard_Metrics_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(empty.Empty)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _Shard_Metrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(empty.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(ShardServer).Metrics(m, &grpc.GenericServerStream[empty.Empty, MetricsResponse]{ServerStream: stream})
+	if interceptor == nil {
+		return srv.(ShardServer).Metrics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Shard_Metrics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShardServer).Metrics(ctx, req.(*empty.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Shard_MetricsServer = grpc.ServerStreamingServer[MetricsResponse]
 
 // Shard_ServiceDesc is the grpc.ServiceDesc for Shard service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -240,13 +238,11 @@ var Shard_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "Delete",
 			Handler:    _Shard_Delete_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Metrics",
-			Handler:       _Shard_Metrics_Handler,
-			ServerStreams: true,
+			MethodName: "Metrics",
+			Handler:    _Shard_Metrics_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "skylr-shard.proto",
 }

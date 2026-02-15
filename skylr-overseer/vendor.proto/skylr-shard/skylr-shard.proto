@@ -25,11 +25,17 @@ service Shard {
             body: "*"
         };
     }
+    // Delete removes entry by provided key
+    rpc Delete(DeleteRequest) returns (DeleteResponse) {
+        option (google.api.http) = {
+            delete: "/api/v1/delete"
+        };
+    }
 
     // === METRICS ===
 
-    // Metrics streams service metrics
-    rpc Metrics(google.protobuf.Empty) returns (stream MetricsResponse) {
+    // Metrics returns current service metrics
+    rpc Metrics(google.protobuf.Empty) returns (MetricsResponse) {
         option (google.api.http) = {
             get: "/api/v1/metrics"
         };
@@ -53,6 +59,19 @@ message SetRequest {
 
 // SetResponse - set request response
 message SetResponse {
+}
+
+// DeleteRequest - delete request params
+message DeleteRequest {
+    string key = 1;
+}
+
+// DeleteResponse - delete response
+message DeleteResponse {
+    // deleted indicates whether the key existed and was deleted
+    // true - key existed and was deleted
+    // false - key did not exist (no-op)
+    bool deleted = 1;
 }
 
 // Entry - storage entry
@@ -82,7 +101,16 @@ message InputEntry {
     google.protobuf.Duration ttl = 7;
 }
 
+// MetricsResponse - service metrics snapshot
 message MetricsResponse {
-    int64 num_elements = 1;
-    double cpu_usage = 2;
+    // system
+    double cpu_usage = 1;
+    uint64 memory_rss_bytes = 2;          // process RSS (what OS/OOM killer sees)
+    uint64 memory_heap_alloc_bytes = 3;   // Go heap live objects (diagnostics)
+    // throughput (cumulative counters, Overseer computes rates)
+    uint64 total_gets = 4;
+    uint64 total_sets = 5;
+    uint64 total_deletes = 6;
+    // uptime
+    int64 uptime_seconds = 7;
 }

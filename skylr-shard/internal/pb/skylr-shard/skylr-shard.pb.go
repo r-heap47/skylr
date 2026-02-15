@@ -491,10 +491,19 @@ func (x *InputEntry) GetTtl() *duration.Duration {
 	return nil
 }
 
+// MetricsResponse - service metrics snapshot
 type MetricsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	NumElements   int64                  `protobuf:"varint,1,opt,name=num_elements,json=numElements,proto3" json:"num_elements,omitempty"`
-	CpuUsage      float64                `protobuf:"fixed64,2,opt,name=cpu_usage,json=cpuUsage,proto3" json:"cpu_usage,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// system
+	CpuUsage             float64 `protobuf:"fixed64,1,opt,name=cpu_usage,json=cpuUsage,proto3" json:"cpu_usage,omitempty"`
+	MemoryRssBytes       uint64  `protobuf:"varint,2,opt,name=memory_rss_bytes,json=memoryRssBytes,proto3" json:"memory_rss_bytes,omitempty"`                     // process RSS (what OS/OOM killer sees)
+	MemoryHeapAllocBytes uint64  `protobuf:"varint,3,opt,name=memory_heap_alloc_bytes,json=memoryHeapAllocBytes,proto3" json:"memory_heap_alloc_bytes,omitempty"` // Go heap live objects (diagnostics)
+	// throughput (cumulative counters, Overseer computes rates)
+	TotalGets    uint64 `protobuf:"varint,4,opt,name=total_gets,json=totalGets,proto3" json:"total_gets,omitempty"`
+	TotalSets    uint64 `protobuf:"varint,5,opt,name=total_sets,json=totalSets,proto3" json:"total_sets,omitempty"`
+	TotalDeletes uint64 `protobuf:"varint,6,opt,name=total_deletes,json=totalDeletes,proto3" json:"total_deletes,omitempty"`
+	// uptime
+	UptimeSeconds int64 `protobuf:"varint,7,opt,name=uptime_seconds,json=uptimeSeconds,proto3" json:"uptime_seconds,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -529,16 +538,51 @@ func (*MetricsResponse) Descriptor() ([]byte, []int) {
 	return file_skylr_shard_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *MetricsResponse) GetNumElements() int64 {
+func (x *MetricsResponse) GetCpuUsage() float64 {
 	if x != nil {
-		return x.NumElements
+		return x.CpuUsage
 	}
 	return 0
 }
 
-func (x *MetricsResponse) GetCpuUsage() float64 {
+func (x *MetricsResponse) GetMemoryRssBytes() uint64 {
 	if x != nil {
-		return x.CpuUsage
+		return x.MemoryRssBytes
+	}
+	return 0
+}
+
+func (x *MetricsResponse) GetMemoryHeapAllocBytes() uint64 {
+	if x != nil {
+		return x.MemoryHeapAllocBytes
+	}
+	return 0
+}
+
+func (x *MetricsResponse) GetTotalGets() uint64 {
+	if x != nil {
+		return x.TotalGets
+	}
+	return 0
+}
+
+func (x *MetricsResponse) GetTotalSets() uint64 {
+	if x != nil {
+		return x.TotalSets
+	}
+	return 0
+}
+
+func (x *MetricsResponse) GetTotalDeletes() uint64 {
+	if x != nil {
+		return x.TotalDeletes
+	}
+	return 0
+}
+
+func (x *MetricsResponse) GetUptimeSeconds() int64 {
+	if x != nil {
+		return x.UptimeSeconds
 	}
 	return 0
 }
@@ -575,15 +619,22 @@ const file_skylr_shard_proto_rawDesc = "" +
 	"\n" +
 	"InputEntry\x12+\n" +
 	"\x05entry\x18\x01 \x01(\v2\x15.skylr_shard.v1.EntryR\x05entry\x12+\n" +
-	"\x03ttl\x18\a \x01(\v2\x19.google.protobuf.DurationR\x03ttl\"Q\n" +
-	"\x0fMetricsResponse\x12!\n" +
-	"\fnum_elements\x18\x01 \x01(\x03R\vnumElements\x12\x1b\n" +
-	"\tcpu_usage\x18\x02 \x01(\x01R\bcpuUsage2\xef\x02\n" +
+	"\x03ttl\x18\a \x01(\v2\x19.google.protobuf.DurationR\x03ttl\"\x99\x02\n" +
+	"\x0fMetricsResponse\x12\x1b\n" +
+	"\tcpu_usage\x18\x01 \x01(\x01R\bcpuUsage\x12(\n" +
+	"\x10memory_rss_bytes\x18\x02 \x01(\x04R\x0ememoryRssBytes\x125\n" +
+	"\x17memory_heap_alloc_bytes\x18\x03 \x01(\x04R\x14memoryHeapAllocBytes\x12\x1d\n" +
+	"\n" +
+	"total_gets\x18\x04 \x01(\x04R\ttotalGets\x12\x1d\n" +
+	"\n" +
+	"total_sets\x18\x05 \x01(\x04R\ttotalSets\x12#\n" +
+	"\rtotal_deletes\x18\x06 \x01(\x04R\ftotalDeletes\x12%\n" +
+	"\x0euptime_seconds\x18\a \x01(\x03R\ruptimeSeconds2\xed\x02\n" +
 	"\x05Shard\x12S\n" +
 	"\x03Get\x12\x1a.skylr_shard.v1.GetRequest\x1a\x1b.skylr_shard.v1.GetResponse\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/api/v1/get\x12Q\n" +
 	"\x03Set\x12\x1a.skylr_shard.v1.SetRequest\x1a\x16.google.protobuf.Empty\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/api/v1/set\x12_\n" +
-	"\x06Delete\x12\x1d.skylr_shard.v1.DeleteRequest\x1a\x1e.skylr_shard.v1.DeleteResponse\"\x16\x82\xd3\xe4\x93\x02\x10*\x0e/api/v1/delete\x12]\n" +
-	"\aMetrics\x12\x16.google.protobuf.Empty\x1a\x1f.skylr_shard.v1.MetricsResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/v1/metrics0\x01B\x17Z\x15./skylr-shard;pbshardb\x06proto3"
+	"\x06Delete\x12\x1d.skylr_shard.v1.DeleteRequest\x1a\x1e.skylr_shard.v1.DeleteResponse\"\x16\x82\xd3\xe4\x93\x02\x10*\x0e/api/v1/delete\x12[\n" +
+	"\aMetrics\x12\x16.google.protobuf.Empty\x1a\x1f.skylr_shard.v1.MetricsResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/v1/metricsB\x17Z\x15./skylr-shard;pbshardb\x06proto3"
 
 var (
 	file_skylr_shard_proto_rawDescOnce sync.Once

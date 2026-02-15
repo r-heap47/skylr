@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/r-heap47/skylr/skylr-shard/internal/metrics"
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,6 +14,8 @@ import (
 
 // Set uploads new entry to storage
 func (i *Implementation) Set(ctx context.Context, req *pbshard.SetRequest) (*emptypb.Empty, error) {
+	defer metrics.IncSetOps()
+
 	if err := validateSetRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
