@@ -11,6 +11,9 @@ type Storage interface {
 	Get(ctx context.Context, k string) (*Entry, error)
 	// Set creates/updates key-value pair in the storage
 	Set(ctx context.Context, e Entry) (*Entry, error)
+	// Delete removes entry by key k from the storage
+	// Returns true if the key existed, false otherwise
+	Delete(ctx context.Context, k string) (bool, error)
 	// Clean cleans up expired entries
 	Clean(ctx context.Context, now time.Time) error
 	// Len returns the amount of elements in storage

@@ -198,3 +198,120 @@ func TestGet(t *testing.T) {
 		require.Nil(t, got)
 	})
 }
+
+func TestDelete(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success: delete existing key", func(t *testing.T) {
+		t.Parallel()
+
+		var (
+			ctx     = t.Context()
+			now     = testutils.MustParseDate(t, "2025-01-01")
+			startCh = make(chan struct{})
+		)
+
+		store := New(Config{
+			CurTime:         utils.Const(now),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           startCh,
+		})
+
+		// Set entry
+		entry := storage.Entry{K: "key", V: "value", Exp: now.Add(time.Hour)}
+		_, err := store.Set(ctx, entry)
+		require.NoError(t, err)
+
+		// Verify it exists
+		got, err := store.Get(ctx, "key")
+		require.NoError(t, err)
+		require.NotNil(t, got)
+
+		// Delete
+		deleted, err := store.Delete(ctx, "key")
+		require.NoError(t, err)
+		require.True(t, deleted, "key should have existed")
+
+		// Verify it's gone
+		_, err = store.Get(ctx, "key")
+		require.Error(t, err)
+		require.ErrorIs(t, err, errors.ErrNotFound)
+	})
+
+	t.Run("success: delete non-existing key (no-op)", func(t *testing.T) {
+		t.Parallel()
+
+		var (
+			ctx     = t.Context()
+			startCh = make(chan struct{})
+		)
+
+		store := New(Config{
+			CurTime:         utils.Const(time.Now()),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           startCh,
+		})
+
+		// Delete non-existing key should not error and return false
+		deleted, err := store.Delete(ctx, "nonexistent")
+		require.NoError(t, err)
+		require.False(t, deleted, "key should not have existed")
+	})
+
+	t.Run("success: delete is idempotent", func(t *testing.T) {
+		t.Parallel()
+
+		var (
+			ctx     = t.Context()
+			now     = testutils.MustParseDate(t, "2025-01-01")
+			startCh = make(chan struct{})
+		)
+
+		store := New(Config{
+			CurTime:         utils.Const(now),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           startCh,
+		})
+
+		// Set entry
+		entry := storage.Entry{K: "key", V: "value", Exp: now.Add(time.Hour)}
+		_, err := store.Set(ctx, entry)
+		require.NoError(t, err)
+
+		// First delete - should return true
+		deleted, err := store.Delete(ctx, "key")
+		require.NoError(t, err)
+		require.True(t, deleted)
+
+		// Second delete - should return false (idempotent)
+		deleted, err = store.Delete(ctx, "key")
+		require.NoError(t, err)
+		require.False(t, deleted, "second delete should return false")
+	})
+
+	t.Run("error: ctx done", func(t *testing.T) {
+		t.Parallel()
+
+		var (
+			ctx, cancel = context.WithCancel(t.Context())
+			startCh     = make(chan struct{})
+		)
+
+		store := New(Config{
+			CurTime:         utils.Const(time.Now()),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           startCh,
+		})
+
+		cancel()
+
+		deleted, err := store.Delete(ctx, "key")
+		require.Error(t, err)
+		require.ErrorContains(t, err, "context canceled")
+		require.False(t, deleted)
+	})
+}
