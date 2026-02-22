@@ -22,11 +22,9 @@ PROTOC_DST := $(CURDIR)/internal/pb
 OPENAPI_OUT := $(CURDIR)/internal/pb/skylr-shard
 
 .PHONY: run
-run: GRPC-PORT ?= 5000
-run: GRPC-GW-PORT ?= 5001
-run: GRACEFUL ?= true
+run: CONFIG ?= config/config.yaml
 run:
-	go run cmd/main.go --grpc-port=$(GRPC-PORT) --grpc-gw-port=$(GRPC-GW-PORT) --graceful=$(GRACEFUL)
+	go run cmd/main.go --config=$(CONFIG)
 
 .PHONY: all
 all: test build lint

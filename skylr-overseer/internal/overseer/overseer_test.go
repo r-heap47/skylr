@@ -25,16 +25,18 @@ func dialFakeConn() (*grpc.ClientConn, error) {
 // testConfig returns an Overseer config with near-zero delays, suitable for tests.
 func testConfig() Config {
 	return Config{
-		CheckForShardFailuresDelay: utils.Const[time.Duration](time.Millisecond),
-		ObserverDelay:              utils.Const[time.Duration](time.Millisecond),
-		ObserverMetricsTimeout:     utils.Const[time.Duration](100 * time.Millisecond),
-		ObserverErrorThreshold:     utils.Const[int](3),
+		CheckForShardFailuresDelay: utils.Const(time.Millisecond),
+		ObserverDelay:              utils.Const(time.Millisecond),
+		ObserverMetricsTimeout:     utils.Const(100 * time.Millisecond),
+		ObserverErrorThreshold:     utils.Const(3),
 	}
 }
 
 // TestRegister_HappyPath verifies that a valid address is successfully registered
 // and appears in the Overseer's shard map.
 func TestRegister_HappyPath(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -48,6 +50,8 @@ func TestRegister_HappyPath(t *testing.T) {
 // TestRegister_Duplicate verifies that registering the same address twice
 // returns an error and leaves exactly one shard in the map.
 func TestRegister_Duplicate(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -63,6 +67,8 @@ func TestRegister_Duplicate(t *testing.T) {
 // TestRegister_CancelledCtx verifies that Register with an already-cancelled
 // context returns immediately with an error.
 func TestRegister_CancelledCtx(t *testing.T) {
+	t.Parallel()
+
 	rootCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -79,6 +85,8 @@ func TestRegister_CancelledCtx(t *testing.T) {
 // TestCheckForShardFailures_RemovesFailedShard verifies that when errChan
 // receives an error, checkForShardFailures removes the shard from the map.
 func TestCheckForShardFailures_RemovesFailedShard(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

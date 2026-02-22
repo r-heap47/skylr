@@ -1,0 +1,9 @@
+grpc:
+  host: "0.0.0.0"
+  port: "9000"
+
+overseer:
+  check_for_shard_failures_delay: "1s"
+  observer_delay: "1s"
+  observer_metrics_timeout: "5s"
+  observer_error_threshold: 3

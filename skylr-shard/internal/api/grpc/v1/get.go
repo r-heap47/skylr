@@ -2,11 +2,12 @@ package v1
 
 import (
 	"context"
-	"errors"
+	stderrors "errors"
 	"fmt"
 
 	"github.com/r-heap47/skylr/skylr-shard/internal/metrics"
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
+	"github.com/r-heap47/skylr/skylr-shard/internal/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -21,6 +22,9 @@ func (i *Implementation) Get(ctx context.Context, req *pbshard.GetRequest) (*pbs
 
 	entry, err := i.shard.Get(ctx, req.Key)
 	if err != nil {
+		if stderrors.Is(err, errors.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "entry by given key not found")
+		}
 		return nil, status.Error(codes.Internal, fmt.Sprintf("shard.Get: %s", err))
 	}
 
@@ -31,10 +35,10 @@ func (i *Implementation) Get(ctx context.Context, req *pbshard.GetRequest) (*pbs
 
 func validateGetRequest(req *pbshard.GetRequest) error {
 	if req == nil {
-		return errors.New("UNEXPECTED: GetRequest is nil")
+		return stderrors.New("UNEXPECTED: GetRequest is nil")
 	}
 	if req.Key == "" {
-		return errors.New("key cannot be empty")
+		return stderrors.New("key cannot be empty")
 	}
 
 	return nil

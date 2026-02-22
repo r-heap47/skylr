@@ -9,34 +9,36 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	v1 "github.com/r-heap47/skylr/skylr-overseer/internal/api/grpc/v1"
+	"github.com/r-heap47/skylr/skylr-overseer/internal/config"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/overseer"
 	pbovr "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-overseer"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/pkg/utils"
 	"google.golang.org/grpc"
 )
 
-var (
-	port = flag.String("port", "9000", "Port for grpc-server to be run on (default: 9000)")
-	host = flag.String("host", "0.0.0.0", "Host interface to listen on (default: 0.0.0.0)")
-)
+var configPath = flag.String("config", "config/config.yaml", "Path to YAML config file")
 
 // Run .
 func Run() error {
 	flag.Parse()
 
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		return fmt.Errorf("config.Load: %w", err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	grpcEndpoint := fmt.Sprintf("%s:%s", *host, *port)
+	grpcEndpoint := fmt.Sprintf("%s:%s", cfg.GRPC.Host, cfg.GRPC.Port)
 
 	ovr := overseer.New(ctx, overseer.Config{
-		CheckForShardFailuresDelay: utils.Const(time.Second),     // TODO: proper config
-		ObserverDelay:              utils.Const(time.Second),     // TODO: proper config
-		ObserverMetricsTimeout:     utils.Const(5 * time.Second), // TODO: proper config
-		ObserverErrorThreshold:     utils.Const(3),               // TODO: proper config
+		CheckForShardFailuresDelay: utils.Const(cfg.Overseer.CheckForShardFailuresDelay.Duration),
+		ObserverDelay:              utils.Const(cfg.Overseer.ObserverDelay.Duration),
+		ObserverMetricsTimeout:     utils.Const(cfg.Overseer.ObserverMetricsTimeout.Duration),
+		ObserverErrorThreshold:     utils.Const(cfg.Overseer.ObserverErrorThreshold),
 	})
 
 	impl := v1.New(&v1.Config{

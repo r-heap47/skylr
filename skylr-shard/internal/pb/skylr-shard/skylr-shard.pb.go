@@ -442,7 +442,7 @@ type InputEntry struct {
 	// entry
 	Entry *Entry `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
 	// ttl
-	Ttl           *duration.Duration `protobuf:"bytes,7,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	Ttl           *duration.Duration `protobuf:"bytes,2,opt,name=ttl,proto3" json:"ttl,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -619,7 +619,7 @@ const file_skylr_shard_proto_rawDesc = "" +
 	"\n" +
 	"InputEntry\x12+\n" +
 	"\x05entry\x18\x01 \x01(\v2\x15.skylr_shard.v1.EntryR\x05entry\x12+\n" +
-	"\x03ttl\x18\a \x01(\v2\x19.google.protobuf.DurationR\x03ttl\"\x99\x02\n" +
+	"\x03ttl\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x03ttl\"\x99\x02\n" +
 	"\x0fMetricsResponse\x12\x1b\n" +
 	"\tcpu_usage\x18\x01 \x01(\x01R\bcpuUsage\x12(\n" +
 	"\x10memory_rss_bytes\x18\x02 \x01(\x04R\x0ememoryRssBytes\x125\n" +

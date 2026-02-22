@@ -15,6 +15,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	grpcV1 "github.com/r-heap47/skylr/skylr-shard/internal/api/grpc/v1"
+	"github.com/r-heap47/skylr/skylr-shard/internal/config"
 	"github.com/r-heap47/skylr/skylr-shard/internal/metrics"
 	pbovr "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-overseer"
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
@@ -24,43 +25,36 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var (
-	grpcPort = flag.String("grpc-port", "5000", "Port for grpc-server to be run on (default: 5000)")
-	gwPort   = flag.String("grpc-gw-port", "5001", "Port for grpc-gateway-server to be run on (default: 5001)")
-	graceful = flag.Bool("graceful", true, "Bool flag for switching graceful shutdown (default: true)")
-)
+var configPath = flag.String("config", "config/config.yaml", "Path to YAML config file")
 
-// nolint: revive
-// TODO: proper configuration
+// Run starts the shard application: loads config, initialises storage, gRPC and HTTP servers.
 func Run() error {
+	flag.Parse()
+
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		return fmt.Errorf("config.Load: %w", err)
+	}
+
 	var (
 		initCtx = context.Background()
 
-		grpcHost = "localhost"
-		gwHost   = "localhost"
-
-		grpcEndpoint string
-		gwEndpoint   string
+		grpcEndpoint = fmt.Sprintf("%s:%s", cfg.GRPC.Host, cfg.GRPC.Port)
+		gwEndpoint   = fmt.Sprintf("%s:%s", cfg.Gateway.Host, cfg.Gateway.Port)
 
 		startCh = make(chan struct{})
 	)
 
-	// parsing cmd flags
-	flag.Parse()
-
-	grpcEndpoint = fmt.Sprintf("%s:%s", grpcHost, *grpcPort)
-	gwEndpoint = fmt.Sprintf("%s:%s", gwHost, *gwPort)
-
-	curTime := func(ctx context.Context) time.Time {
+	curTime := func(_ context.Context) time.Time {
 		return time.Now()
 	}
 
-	cleanupTimeout := func(ctx context.Context) time.Duration {
-		return 5 * time.Second
+	cleanupTimeout := func(_ context.Context) time.Duration {
+		return cfg.Storage.CleanupTimeout.Duration
 	}
 
-	cleanupCooldown := func(ctx context.Context) time.Duration {
-		return 5 * time.Second
+	cleanupCooldown := func(_ context.Context) time.Duration {
+		return cfg.Storage.CleanupCooldown.Duration
 	}
 
 	storage := noeviction.New(noeviction.Config{
@@ -70,7 +64,7 @@ func Run() error {
 		Start:           startCh,
 	})
 
-	shard := shard.New(shard.Config{
+	shardSvc := shard.New(shard.Config{
 		Storage: storage,
 		CurTime: curTime,
 	})
@@ -78,7 +72,7 @@ func Run() error {
 	collector := metrics.NewCollector(time.Now())
 
 	impl := grpcV1.New(grpcV1.Config{
-		Shard:     shard,
+		Shard:     shardSvc,
 		Collector: collector,
 	})
 
@@ -107,15 +101,17 @@ func Run() error {
 		}
 	}()
 
-	// === GRPC-GATEWAY (HTTP) SERVER SETUP
+	// === GRPC-GATEWAY (HTTP) SERVER SETUP ===
 
 	gwMux := runtime.NewServeMux()
 
-	// TODO: add timeouts to prevent Slowloris Attack -- rm nolint
 	// nolint: gosec
 	httpServer := &http.Server{
-		Addr:    gwEndpoint,
-		Handler: gwMux,
+		Addr:         gwEndpoint,
+		Handler:      gwMux,
+		ReadTimeout:  cfg.Gateway.ReadTimeout.Duration,
+		WriteTimeout: cfg.Gateway.WriteTimeout.Duration,
+		IdleTimeout:  cfg.Gateway.IdleTimeout.Duration,
 	}
 
 	opts := []grpc.DialOption{
@@ -130,7 +126,6 @@ func Run() error {
 	go func() {
 		log.Printf("[GRPC] grpc-gateway server is set up on %s\n", gwEndpoint)
 
-		// TODO: add timeouts to prevent Slowloris Attack -- rm nolint
 		// nolint: gosec
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- fmt.Errorf("httpServer.ListenAndServe: %w", err)
@@ -140,7 +135,7 @@ func Run() error {
 	// === DIALING OVERSEER ===
 
 	ovrConn, err := grpc.NewClient(
-		"127.0.0.1:9000",
+		cfg.Overseer.Address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -149,7 +144,6 @@ func Run() error {
 
 	ovrClient := pbovr.NewOverseerClient(ovrConn)
 
-	// trying to register on overseer right away
 	_, err = ovrClient.Register(initCtx, &pbovr.RegisterRequest{
 		Address: grpcEndpoint,
 	})
@@ -170,14 +164,14 @@ func Run() error {
 	}
 
 	log.Println("[GRPC] shutting down grpc server...")
-	if *graceful {
+	if cfg.Graceful {
 		grpcServer.GracefulStop()
 	} else {
 		grpcServer.Stop()
 	}
 
 	log.Println("[GRPC] shutting down grpc-gateway server...")
-	shutdownCtx, cancel := context.WithTimeout(initCtx, 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(initCtx, cfg.Gateway.ShutdownTimeout.Duration)
 	defer cancel()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {

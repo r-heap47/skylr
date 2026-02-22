@@ -52,6 +52,8 @@ func waitDone(t *testing.T, done <-chan struct{}, timeout time.Duration, msg str
 // TestObserve_CtxCancelStopsLoop verifies that observe returns promptly when
 // its context is cancelled without signalling errChan.
 func TestObserve_CtxCancelStopsLoop(t *testing.T) {
+	t.Parallel()
+
 	mc := minimock.NewController(t)
 
 	errChan := make(chan error, 1)
@@ -79,6 +81,8 @@ func TestObserve_CtxCancelStopsLoop(t *testing.T) {
 // TestObserve_BelowThresholdNoSignal verifies that N-1 consecutive errors
 // followed by a success do NOT signal errChan.
 func TestObserve_BelowThresholdNoSignal(t *testing.T) {
+	t.Parallel()
+
 	const threshold = 3
 
 	mc := minimock.NewController(t)
@@ -119,6 +123,8 @@ func TestObserve_BelowThresholdNoSignal(t *testing.T) {
 // TestObserve_ThresholdReachedSignalsErrChan verifies that N consecutive
 // errors cause observe to send to errChan and stop.
 func TestObserve_ThresholdReachedSignalsErrChan(t *testing.T) {
+	t.Parallel()
+
 	const threshold = 3
 
 	mc := minimock.NewController(t)
@@ -143,6 +149,8 @@ func TestObserve_ThresholdReachedSignalsErrChan(t *testing.T) {
 // TestObserve_ErrorStreakResetsOnSuccess verifies that after N-1 errors and
 // a success, another N-1 errors still do NOT trigger errChan.
 func TestObserve_ErrorStreakResetsOnSuccess(t *testing.T) {
+	t.Parallel()
+
 	const threshold = 3
 
 	mc := minimock.NewController(t)
