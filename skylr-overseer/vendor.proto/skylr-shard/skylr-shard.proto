@@ -98,7 +98,7 @@ message InputEntry {
     // entry
     Entry entry = 1;
     // ttl
-    google.protobuf.Duration ttl = 7;
+    google.protobuf.Duration ttl = 2;
 }
 
 // MetricsResponse - service metrics snapshot

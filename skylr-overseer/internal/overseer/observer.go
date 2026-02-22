@@ -14,30 +14,60 @@ import (
 type observer struct {
 	addr        string
 	shardClient pbshard.ShardClient
-	errChan     chan<- error // channel for sending ping errors
+	errChan     chan<- error
 
-	delay utils.Provider[time.Duration]
+	delay          utils.Provider[time.Duration]
+	metricsTimeout utils.Provider[time.Duration]
+	errorThreshold utils.Provider[int]
 }
 
-// observe monitors a single shard
-func (obs *observer) observe() {
-	ticker := time.NewTicker(1 * time.Second) // polling interval
+// observe monitors a single shard until ctx is cancelled.
+// After errorThreshold consecutive Metrics failures it signals errChan and stops.
+func (obs *observer) observe(ctx context.Context) {
+	// poll on every tick; threshold is resolved once per observe lifetime
+	ticker := time.NewTicker(obs.delay(ctx))
 	defer ticker.Stop()
 
-	for range ticker.C {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		metrics, err := obs.shardClient.Metrics(ctx, &emptypb.Empty{})
-		cancel()
+	var (
+		consecutiveErrors         int
+		consecutiveErrorsTheshold = obs.errorThreshold(ctx)
+	)
 
-		if err != nil {
-			// Only log the error, don't send to errChan
-			// This prevents losing the shard on transient network issues
-			log.Printf("[ERROR] Failed to collect metrics from %s: %s", obs.addr, err)
-			continue // continue polling on next tick
+	for {
+		// stop when the overseer shuts down or when the shard is deregistered
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
 		}
 
-		// Stub: just log the metrics
-		log.Printf("[INFO] Metrics from %s: CPU=%.2f%%, RSS=%d MB, Heap=%d MB, Gets=%d, Sets=%d, Deletes=%d, Uptime=%ds",
+		// collect metrics with a bounded timeout so a hung shard never blocks the loop
+		metrics, err := func() (*pbshard.MetricsResponse, error) {
+			rpcCtx, cancel := context.WithTimeout(ctx, obs.metricsTimeout(ctx))
+			defer cancel()
+
+			return obs.shardClient.Metrics(rpcCtx, &emptypb.Empty{})
+		}()
+
+		if err != nil {
+			consecutiveErrors++
+
+			log.Printf("[ERROR] shard %s: metrics error (%d/%d): %s",
+				obs.addr, consecutiveErrors, consecutiveErrorsTheshold, err)
+
+			// only signal failure after threshold is reached to tolerate transient errors
+			if consecutiveErrors >= consecutiveErrorsTheshold {
+				obs.errChan <- err
+				return
+			}
+
+			continue
+		}
+
+		// successful poll resets the error streak
+		consecutiveErrors = 0
+
+		log.Printf("[INFO] metrics from %s: CPU=%.2f%%, RSS=%d MB, Heap=%d MB, Gets=%d, Sets=%d, Deletes=%d, Uptime=%ds",
 			obs.addr,
 			metrics.CpuUsage,
 			metrics.MemoryRssBytes/(1024*1024),
@@ -46,6 +76,5 @@ func (obs *observer) observe() {
 			metrics.TotalSets,
 			metrics.TotalDeletes,
 			metrics.UptimeSeconds)
-
 	}
 }
