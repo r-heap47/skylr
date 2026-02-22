@@ -18,6 +18,8 @@ type Overseer struct {
 	shards   map[string]shard
 	shardsMu *sync.RWMutex
 
+	ovsCtx context.Context // root context; lives for the entire overseer lifetime
+
 	observerErrorThreshold     utils.Provider[int]
 	observerMetricsTimeout     utils.Provider[time.Duration]
 	checkForShardFailuresDelay utils.Provider[time.Duration]
@@ -43,17 +45,18 @@ type Config struct {
 }
 
 // New creates new Overseer
-func New(ctx context.Context, cfg Config) *Overseer {
+func New(ovsCtx context.Context, cfg Config) *Overseer {
 	ovr := &Overseer{
 		shards:                     make(map[string]shard),
 		shardsMu:                   &sync.RWMutex{},
+		ovsCtx:                     ovsCtx,
 		observerErrorThreshold:     cfg.ObserverErrorThreshold,
 		observerMetricsTimeout:     cfg.ObserverMetricsTimeout,
 		checkForShardFailuresDelay: cfg.CheckForShardFailuresDelay,
 		observerDelay:              cfg.ObserverDelay,
 	}
 
-	go ovr.checkForShardFailures(ctx)
+	go ovr.checkForShardFailures(ovsCtx)
 
 	return ovr
 }
@@ -83,7 +86,9 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 	shardClient := pbshard.NewShardClient(shardConn)
 	shardErrChan := make(chan error, 1)
 
-	obsCtx, obsCancel := context.WithCancel(ctx)
+	// obsCtx is derived from the overseer's root context (not the per-RPC ctx)
+	// so the observer lives for the full overseer lifetime, not just one RPC call.
+	obsCtx, obsCancel := context.WithCancel(ovr.ovsCtx)
 
 	obs := &observer{
 		addr:           addr,

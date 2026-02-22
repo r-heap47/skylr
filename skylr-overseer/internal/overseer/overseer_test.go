@@ -25,10 +25,10 @@ func dialFakeConn() (*grpc.ClientConn, error) {
 // testConfig returns an Overseer config with near-zero delays, suitable for tests.
 func testConfig() Config {
 	return Config{
-		CheckForShardFailuresDelay: utils.Const[time.Duration](time.Millisecond),
-		ObserverDelay:              utils.Const[time.Duration](time.Millisecond),
-		ObserverMetricsTimeout:     utils.Const[time.Duration](100 * time.Millisecond),
-		ObserverErrorThreshold:     utils.Const[int](3),
+		CheckForShardFailuresDelay: utils.Const(time.Millisecond),
+		ObserverDelay:              utils.Const(time.Millisecond),
+		ObserverMetricsTimeout:     utils.Const(100 * time.Millisecond),
+		ObserverErrorThreshold:     utils.Const(3),
 	}
 }
 
