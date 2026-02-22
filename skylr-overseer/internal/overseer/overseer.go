@@ -15,33 +15,45 @@ import (
 
 // Overseer - Shard coordinator
 type Overseer struct {
-	shards   []shard
+	shards   map[string]shard
 	shardsMu *sync.RWMutex
 
+	observerErrorThreshold     utils.Provider[int]
+	observerMetricsTimeout     utils.Provider[time.Duration]
 	checkForShardFailuresDelay utils.Provider[time.Duration]
+	observerDelay              utils.Provider[time.Duration]
 }
 
 // shard - Shard data used by Overseer
 type shard struct {
 	addr    string
+	conn    *grpc.ClientConn
+	cancel  context.CancelFunc // stops the observer goroutine
 	errChan <-chan error
 }
 
 // Config - Overseer config
 type Config struct {
 	CheckForShardFailuresDelay utils.Provider[time.Duration]
+	ObserverDelay              utils.Provider[time.Duration]
+	ObserverMetricsTimeout     utils.Provider[time.Duration]
+	// ObserverErrorThreshold is the number of consecutive Metrics errors
+	// before a shard is considered failed and removed.
+	ObserverErrorThreshold utils.Provider[int]
 }
 
 // New creates new Overseer
-func New(cfg Config) *Overseer {
+func New(ctx context.Context, cfg Config) *Overseer {
 	ovr := &Overseer{
-		shards:                     []shard{},
+		shards:                     make(map[string]shard),
 		shardsMu:                   &sync.RWMutex{},
+		observerErrorThreshold:     cfg.ObserverErrorThreshold,
+		observerMetricsTimeout:     cfg.ObserverMetricsTimeout,
 		checkForShardFailuresDelay: cfg.CheckForShardFailuresDelay,
+		observerDelay:              cfg.ObserverDelay,
 	}
 
-	// start shard failure check
-	go ovr.checkForShardFailures()
+	go ovr.checkForShardFailures(ctx)
 
 	return ovr
 }
@@ -52,7 +64,14 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 		return err
 	}
 
-	// create grpc client for received addr
+	// deduplicate: lookup by addr
+	ovr.shardsMu.RLock()
+	_, exists := ovr.shards[addr]
+	ovr.shardsMu.RUnlock()
+	if exists {
+		return fmt.Errorf("shard %q is already registered", addr)
+	}
+
 	shardConn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -62,80 +81,102 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 	}
 
 	shardClient := pbshard.NewShardClient(shardConn)
-	shardErrChan := make(chan error)
+	shardErrChan := make(chan error, 1)
+
+	obsCtx, obsCancel := context.WithCancel(ctx)
 
 	obs := &observer{
-		addr:        addr,
-		shardClient: shardClient,
-		errChan:     shardErrChan,
-		delay:       func(_ context.Context) time.Duration { return time.Second },
+		addr:           addr,
+		shardClient:    shardClient,
+		errChan:        shardErrChan,
+		delay:          ovr.observerDelay,
+		metricsTimeout: ovr.observerMetricsTimeout,
+		errorThreshold: ovr.observerErrorThreshold,
 	}
 
-	// start shard healtcheck
-	go obs.observe()
-
-	ovr.appendShardAndReshard(shard{
+	// add shard to the list before starting the observer so that
+	// checkForShardFailures can always find it when errChan fires
+	ovr.addShardAndReshardLocked(shard{
 		addr:    addr,
+		conn:    shardConn,
+		cancel:  obsCancel,
 		errChan: shardErrChan,
 	})
+
+	go obs.observe(obsCtx)
 
 	return nil
 }
 
-// checkForShardFailures checks that none of the shards have disconnected
-func (ovr *Overseer) checkForShardFailures() {
-	checkFunc := func() []shard {
-		var removed []shard
+// ShardCount returns the number of currently registered shards.
+func (ovr *Overseer) ShardCount() int {
+	ovr.shardsMu.RLock()
+	defer ovr.shardsMu.RUnlock()
+	return len(ovr.shards)
+}
 
-		ovr.shardsMu.RLock()
-		defer ovr.shardsMu.RUnlock()
-
-		for _, shard := range ovr.shards {
-			select {
-			case err := <-shard.errChan:
-				removed = append(removed, shard)
-				log.Printf("[ERROR] checkFunc in checkForShardFailures received: %s", err)
-			default:
-				// do nothing
-			}
-		}
-
-		return removed
-	}
-
+// checkForShardFailures checks that none of the shards have disconnected.
+// It stops when ctx is cancelled.
+func (ovr *Overseer) checkForShardFailures(ctx context.Context) {
 	for {
-		ctx := context.Background()
-
-		for _, shard := range checkFunc() {
-			ovr.removeShardAndReshard(shard)
+		select {
+		case <-ctx.Done():
+			return
+		default:
 		}
+
+		func() {
+			ovr.shardsMu.Lock()
+			defer ovr.shardsMu.Unlock()
+
+			for addr, s := range ovr.shards {
+				select {
+				case err := <-s.errChan:
+					log.Printf("[ERROR] shard %s reported failure: %s", addr, err)
+					ovr.removeShardAndReshard(s)
+				default:
+				}
+			}
+		}()
 
 		time.Sleep(ovr.checkForShardFailuresDelay(ctx))
 	}
 }
 
-// appendShardAndReshard adds a new shard on Overseer and reshards inside a single lock acquisition
-func (ovr *Overseer) appendShardAndReshard(shard shard) {
+// addShardAndReshardLocked acquires the write lock and adds the shard.
+func (ovr *Overseer) addShardAndReshardLocked(s shard) {
 	ovr.shardsMu.Lock()
 	defer ovr.shardsMu.Unlock()
 
-	ovr.shards = append(ovr.shards, shard)
-	log.Printf("[INFO] New shard added successfully! Current shards: %+v\n", ovr.shards)
+	ovr.addShardAndReshard(s)
+}
+
+// addShardAndReshard adds a new shard. Must be called with shardsMu held.
+func (ovr *Overseer) addShardAndReshard(s shard) {
+	ovr.shards[s.addr] = s
+	log.Printf("[INFO] shard %s added. total shards: %d\n", s.addr, len(ovr.shards))
 	log.Printf("[WARN] APPEND RESHARDING WOULD BE INITIATED HERE\n")
 }
 
-// removeShardAndReshard removes an old shard from Overseer and reshards inside a single lock acquisition
-func (ovr *Overseer) removeShardAndReshard(oldShard shard) {
+// removeShardAndReshardLocked acquires the write lock and removes the shard.
+func (ovr *Overseer) removeShardAndReshardLocked(oldShard shard) {
 	ovr.shardsMu.Lock()
 	defer ovr.shardsMu.Unlock()
 
-	for i, shard := range ovr.shards {
-		if shard.addr == oldShard.addr {
-			ovr.shards = append(ovr.shards[:i], ovr.shards[i+1:]...)
-			break
-		}
+	ovr.removeShardAndReshard(oldShard)
+}
+
+// removeShardAndReshard removes a shard and releases its resources.
+// Must be called with shardsMu held.
+func (ovr *Overseer) removeShardAndReshard(oldShard shard) {
+	delete(ovr.shards, oldShard.addr)
+
+	// stop the observer goroutine and close the gRPC connection
+	oldShard.cancel()
+	if err := oldShard.conn.Close(); err != nil {
+		log.Printf("[WARN] error closing conn to shard %s: %s", oldShard.addr, err)
 	}
 
-	log.Printf("[INFO] Shard removed successfully! Current shards: %+v\n", ovr.shards)
+	log.Printf("[INFO] shard %s removed. total shards: %d\n", oldShard.addr, len(ovr.shards))
 	log.Printf("[WARN] REMOVE RESHARDING WOULD BE INITIATED HERE\n")
 }

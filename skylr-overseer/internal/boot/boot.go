@@ -14,26 +14,29 @@ import (
 	v1 "github.com/r-heap47/skylr/skylr-overseer/internal/api/grpc/v1"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/overseer"
 	pbovr "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-overseer"
+	"github.com/r-heap47/skylr/skylr-overseer/internal/pkg/utils"
 	"google.golang.org/grpc"
 )
 
 var (
 	port = flag.String("port", "9000", "Port for grpc-server to be run on (default: 9000)")
+	host = flag.String("host", "0.0.0.0", "Host interface to listen on (default: 0.0.0.0)")
 )
 
 // Run .
 func Run() error {
-	var (
-		grpcHost     = "localhost"
-		grpcEndpoint string
-	)
-
 	flag.Parse()
 
-	grpcEndpoint = fmt.Sprintf("%s:%s", grpcHost, *port)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ovr := overseer.New(overseer.Config{
-		CheckForShardFailuresDelay: func(_ context.Context) time.Duration { return time.Second }, // TODO: proper config
+	grpcEndpoint := fmt.Sprintf("%s:%s", *host, *port)
+
+	ovr := overseer.New(ctx, overseer.Config{
+		CheckForShardFailuresDelay: utils.Const(time.Second),     // TODO: proper config
+		ObserverDelay:              utils.Const(time.Second),     // TODO: proper config
+		ObserverMetricsTimeout:     utils.Const(5 * time.Second), // TODO: proper config
+		ObserverErrorThreshold:     utils.Const(3),               // TODO: proper config
 	})
 
 	impl := v1.New(&v1.Config{
@@ -43,20 +46,17 @@ func Run() error {
 	// === GRPC SERVER SETUP ===
 
 	grpcServer := grpc.NewServer()
+	pbovr.RegisterOverseerServer(grpcServer, impl)
 
-	// TODO: properly configure network interface -- rm nolint
-	lis, err := net.Listen("tcp", grpcEndpoint) // nolint: gosec
+	lis, err := net.Listen("tcp", grpcEndpoint)
 	if err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
 
 	go func() {
-		pbovr.RegisterOverseerServer(grpcServer, impl)
-
 		log.Printf("[GRPC] grpc server is set up on %s\n", grpcEndpoint)
 
-		err := grpcServer.Serve(lis)
-		if err != nil {
+		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("grpcServer.Serve: %s", err)
 		}
 	}()
@@ -70,6 +70,9 @@ func Run() error {
 
 	log.Println("[GRPC] shutting down grpc server...")
 	grpcServer.GracefulStop()
+
+	// cancel root context — stops checkForShardFailures and all observer goroutines
+	cancel()
 
 	return nil
 }
