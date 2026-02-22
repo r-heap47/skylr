@@ -13,6 +13,7 @@ type Duration struct {
 	time.Duration
 }
 
+// UnmarshalYAML implements yaml.Unmarshaler for Duration.
 func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 	parsed, err := time.ParseDuration(value.Value)
 	if err != nil {
@@ -24,16 +25,19 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+// Config is the top-level application configuration.
 type Config struct {
 	GRPC     GRPCConfig     `yaml:"grpc"`
 	Overseer OverseerConfig `yaml:"overseer"`
 }
 
+// GRPCConfig holds the gRPC server host and port.
 type GRPCConfig struct {
 	Host string `yaml:"host"`
 	Port string `yaml:"port"`
 }
 
+// OverseerConfig holds timing and threshold settings for the Overseer.
 type OverseerConfig struct {
 	CheckForShardFailuresDelay Duration `yaml:"check_for_shard_failures_delay"`
 	ObserverDelay              Duration `yaml:"observer_delay"`
@@ -41,8 +45,9 @@ type OverseerConfig struct {
 	ObserverErrorThreshold     int      `yaml:"observer_error_threshold"`
 }
 
+// Load reads and parses the YAML config file at the given path.
 func Load(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // nolint: gosec
 	if err != nil {
 		return nil, fmt.Errorf("os.ReadFile: %w", err)
 	}

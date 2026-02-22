@@ -27,6 +27,7 @@ import (
 
 var configPath = flag.String("config", "config/config.yaml", "Path to YAML config file")
 
+// Run starts the shard application: loads config, initialises storage, gRPC and HTTP servers.
 func Run() error {
 	flag.Parse()
 

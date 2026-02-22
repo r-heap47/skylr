@@ -164,6 +164,7 @@ func (ovr *Overseer) addShardAndReshard(s shard) {
 }
 
 // removeShardAndReshardLocked acquires the write lock and removes the shard.
+// nolint
 func (ovr *Overseer) removeShardAndReshardLocked(oldShard shard) {
 	ovr.shardsMu.Lock()
 	defer ovr.shardsMu.Unlock()

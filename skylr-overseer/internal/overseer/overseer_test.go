@@ -35,6 +35,8 @@ func testConfig() Config {
 // TestRegister_HappyPath verifies that a valid address is successfully registered
 // and appears in the Overseer's shard map.
 func TestRegister_HappyPath(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -48,6 +50,8 @@ func TestRegister_HappyPath(t *testing.T) {
 // TestRegister_Duplicate verifies that registering the same address twice
 // returns an error and leaves exactly one shard in the map.
 func TestRegister_Duplicate(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -63,6 +67,8 @@ func TestRegister_Duplicate(t *testing.T) {
 // TestRegister_CancelledCtx verifies that Register with an already-cancelled
 // context returns immediately with an error.
 func TestRegister_CancelledCtx(t *testing.T) {
+	t.Parallel()
+
 	rootCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -79,6 +85,8 @@ func TestRegister_CancelledCtx(t *testing.T) {
 // TestCheckForShardFailures_RemovesFailedShard verifies that when errChan
 // receives an error, checkForShardFailures removes the shard from the map.
 func TestCheckForShardFailures_RemovesFailedShard(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
