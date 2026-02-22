@@ -2,6 +2,7 @@ package noeviction
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -95,36 +96,59 @@ func (s *noeviction) Delete(ctx context.Context, k string) (bool, error) {
 }
 
 func (s *noeviction) Clean(ctx context.Context, now time.Time) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	// Phase 1: collect expired keys under read-lock so Get is not blocked.
+	expired := make([]string, 0)
 
-	for k, entry := range s.store {
-		if err := utils.CtxDone(ctx); err != nil {
-			return err
+	err := func() error {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+
+		for k, entry := range s.store {
+			if err := utils.CtxDone(ctx); err != nil {
+				return err
+			}
+			if now.After(entry.Exp) {
+				expired = append(expired, k)
+			}
 		}
 
-		if now.After(entry.Exp) {
-			delete(s.store, k)
+		return nil
+	}()
+	if err != nil {
+		return fmt.Errorf("Clean: error when collecting expired keys: %w", err)
+	}
+	if len(expired) == 0 {
+		return nil
+	}
+
+	// Phase 2: delete under write-lock, re-checking TTL because a client may
+	// have called Set on the same key with a fresh TTL between the two phases.
+
+	err = func() error {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+
+		for _, k := range expired {
+			if err := utils.CtxDone(ctx); err != nil {
+				return err
+			}
+			if entry, ok := s.store[k]; ok && now.After(entry.Exp) {
+				delete(s.store, k)
+			}
 		}
+
+		return nil
+	}()
+	if err != nil {
+		return fmt.Errorf("Clean: error when deleting expired keys: %w", err)
 	}
 
 	return nil
 }
 
-func (s *noeviction) Len(ctx context.Context) (int, error) {
-	if err := utils.CtxDone(ctx); err != nil {
-		return 0, err
-	}
-
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	return len(s.store), nil
-}
-
-// cleanupLoop периодически очищает expired entries
+// cleanupLoop periodically cleanes up expired entries
 func (s *noeviction) cleanupLoop() {
-	// Ждем сигнала старта
+	// waiting for shard to start
 	<-s.start
 
 	for {
@@ -140,7 +164,7 @@ func (s *noeviction) cleanupLoop() {
 	}
 }
 
-// cleanWithTimeout выполняет cleanup с timeout
+// cleanWithTimeout executes cleanup with timeout
 func (s *noeviction) cleanWithTimeout(ctx context.Context) error {
 	timeout := s.cleanupTimeout(ctx)
 	now := s.curTime(ctx)

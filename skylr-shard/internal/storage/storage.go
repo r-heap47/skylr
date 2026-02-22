@@ -16,8 +16,6 @@ type Storage interface {
 	Delete(ctx context.Context, k string) (bool, error)
 	// Clean cleans up expired entries
 	Clean(ctx context.Context, now time.Time) error
-	// Len returns the amount of elements in storage
-	Len(ctx context.Context) (int, error)
 }
 
 // Entry - key-value pair with additional data

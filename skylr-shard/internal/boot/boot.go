@@ -2,6 +2,7 @@ package boot
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -85,6 +86,10 @@ func Run() error {
 
 	grpcServer := grpc.NewServer()
 
+	// errCh collects fatal errors from server goroutines; buffered by the number
+	// of goroutines that write to it so that a late writer never blocks.
+	errCh := make(chan error, 2)
+
 	// TODO: properly configure network interface -- rm nolint
 	lis, err := net.Listen("tcp", grpcEndpoint) // nolint: gosec
 	if err != nil {
@@ -97,9 +102,8 @@ func Run() error {
 		log.Printf("[GRPC] grpc server is set up on %s\n", grpcEndpoint)
 		startCh <- struct{}{} // initializing storages within shard
 
-		err := grpcServer.Serve(lis)
-		if err != nil {
-			log.Fatalf("grpcServer.Serve: %s", err)
+		if err := grpcServer.Serve(lis); err != nil {
+			errCh <- fmt.Errorf("grpcServer.Serve: %w", err)
 		}
 	}()
 
@@ -126,11 +130,10 @@ func Run() error {
 	go func() {
 		log.Printf("[GRPC] grpc-gateway server is set up on %s\n", gwEndpoint)
 
-		// TODO: move from ListenAndServe to support server timeouts -- rm nolint
+		// TODO: add timeouts to prevent Slowloris Attack -- rm nolint
 		// nolint: gosec
-		err := http.ListenAndServe(gwEndpoint, httpServer.Handler)
-		if err != nil {
-			log.Fatalf("http.ListenAndServe: %s", err)
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- fmt.Errorf("httpServer.ListenAndServe: %w", err)
 		}
 	}()
 
@@ -159,7 +162,12 @@ func Run() error {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	<-sigChan
+	select {
+	case sig := <-sigChan:
+		log.Printf("[GRPC] received signal %s, shutting down...\n", sig)
+	case err := <-errCh:
+		log.Printf("[GRPC] fatal server error: %s, shutting down...\n", err)
+	}
 
 	log.Println("[GRPC] shutting down grpc server...")
 	if *graceful {
@@ -172,9 +180,8 @@ func Run() error {
 	shutdownCtx, cancel := context.WithTimeout(initCtx, 5*time.Second)
 	defer cancel()
 
-	err = httpServer.Shutdown(shutdownCtx)
-	if err != nil {
-		log.Fatalf("httpServer.Shutdown: %s", err)
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		return fmt.Errorf("httpServer.Shutdown: %w", err)
 	}
 
 	log.Println("[GRPC] shutdown success")

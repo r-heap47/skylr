@@ -47,6 +47,9 @@ func validateSetRequest(req *pbshard.SetRequest) error {
 	if req.Input.Ttl == nil {
 		return errors.New("ttl cannot be nil")
 	}
+	if req.Input.Ttl.AsDuration() < 0 {
+		return errors.New("ttl cannot be negative")
+	}
 
 	return nil
 }
