@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/r-heap47/skylr/skylr-shard/internal/metrics"
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
@@ -22,6 +23,9 @@ func (i *Implementation) Delete(ctx context.Context, req *pbshard.DeleteRequest)
 	deleted, err := i.shard.Delete(ctx, req.Key)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("shard.Delete: %s", err))
+	}
+	if deleted {
+		log.Printf("[DELETE] key = %s", req.Key)
 	}
 
 	return &pbshard.DeleteResponse{

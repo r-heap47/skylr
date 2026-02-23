@@ -42,7 +42,7 @@ func (obs *observer) observe(ctx context.Context) {
 		}
 
 		// collect metrics with a bounded timeout so a hung shard never blocks the loop
-		metrics, err := func() (*pbshard.MetricsResponse, error) {
+		_, err := func() (*pbshard.MetricsResponse, error) {
 			rpcCtx, cancel := context.WithTimeout(ctx, obs.metricsTimeout(ctx))
 			defer cancel()
 
@@ -66,15 +66,5 @@ func (obs *observer) observe(ctx context.Context) {
 
 		// successful poll resets the error streak
 		consecutiveErrors = 0
-
-		log.Printf("[INFO] metrics from %s: CPU=%.2f%%, RSS=%d MB, Heap=%d MB, Gets=%d, Sets=%d, Deletes=%d, Uptime=%ds",
-			obs.addr,
-			metrics.CpuUsage,
-			metrics.MemoryRssBytes/(1024*1024),
-			metrics.MemoryHeapAllocBytes/(1024*1024),
-			metrics.TotalGets,
-			metrics.TotalSets,
-			metrics.TotalDeletes,
-			metrics.UptimeSeconds)
 	}
 }
