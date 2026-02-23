@@ -9,32 +9,46 @@ on:
   pull_request:
     branches: [ "master" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   general:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         dir: [skylr-shard, skylr-overseer]
-        
+
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.25'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+          cache: 'go'
 
-    - name: Build ${{ matrix.dir }}
-      run: | 
-        cd "${{ matrix.dir }}"
-        go build -v ./...
+      - name: Verify dependencies ${{ matrix.dir }}
+        run: |
+          cd "${{ matrix.dir }}"
+          go mod download
+          go mod verify
 
-    - name: Lint ${{ matrix.dir }}
-      run: |
-        cd "${{ matrix.dir }}"
-        make lint
-        
-    - name: Test ${{ matrix.dir }}
-      run: |
-        cd "${{ matrix.dir }}"
-        make test
+      - name: Build ${{ matrix.dir }}
+        run: |
+          cd "${{ matrix.dir }}"
+          go build -v ./...
+
+      - name: Lint ${{ matrix.dir }}
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.6.2
+          working-directory: ${{ matrix.dir }}
+          args: --config=.golangci.yaml --max-issues-per-linter=1000 --max-same-issues=1000
+
+      - name: Test ${{ matrix.dir }}
+        run: |
+          cd "${{ matrix.dir }}"
+          make test
