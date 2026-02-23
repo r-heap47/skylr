@@ -46,7 +46,7 @@ jobs:
         with:
           version: v2.6.2
           working-directory: ${{ matrix.dir }}
-          args: --config=.golangci.yaml --max-issues-per-linter=1000 --max-same-issues=1000
+          args: --config=.golangci.yaml
 
       - name: Test ${{ matrix.dir }}
         run: |
