@@ -2,6 +2,7 @@ package overseer
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"testing"
@@ -231,19 +232,7 @@ func TestMigrateFromShard_DeleteFailure_NotCountedAsMoved(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	ttl := durationpb.New(30 * time.Second)
-	sourceEntries := []*pbshard.ScanResponse{
-		{Entry: &pbshard.Entry{Key: "key-1", Value: &pbshard.Entry_ValueStr{ValueStr: "v1"}}, RemainingTtl: ttl},
-		{Entry: &pbshard.Entry{Key: "key-2", Value: &pbshard.Entry_ValueStr{ValueStr: "v2"}}, RemainingTtl: ttl},
-		{Entry: &pbshard.Entry{Key: "key-3", Value: &pbshard.Entry_ValueStr{ValueStr: "v3"}}, RemainingTtl: ttl},
-		{Entry: &pbshard.Entry{Key: "key-4", Value: &pbshard.Entry_ValueStr{ValueStr: "v4"}}, RemainingTtl: ttl},
-		{Entry: &pbshard.Entry{Key: "key-5", Value: &pbshard.Entry_ValueStr{ValueStr: "v5"}}, RemainingTtl: ttl},
-	}
-
-	srcFake := &fakeShard{
-		scanEntries: sourceEntries,
-		deleteErr:   status.Error(codes.Internal, "delete failed"),
-	}
+	srcFake := &fakeShard{deleteErr: status.Error(codes.Internal, "delete failed")}
 	dstFake := &fakeShard{}
 
 	srcAddr, srcStop := startFakeShard(t, srcFake)
@@ -260,6 +249,19 @@ func TestMigrateFromShard_DeleteFailure_NotCountedAsMoved(t *testing.T) {
 	ovr.ring.AddNode(srcAddr)
 	oldRing := ovr.ring.Snapshot()
 	ovr.ring.AddNode(dstAddr)
+
+	// Build source entries from keys that map to dst; ensures at least one migration candidate.
+	ttl := durationpb.New(30 * time.Second)
+	for i := 0; i < 100; i++ {
+		key := fmt.Sprintf("key-%d", i)
+		if ovr.keyMovedToNewShard(key, oldRing, dstAddr) {
+			srcFake.scanEntries = append(srcFake.scanEntries, &pbshard.ScanResponse{
+				Entry:        &pbshard.Entry{Key: key, Value: &pbshard.Entry_ValueStr{ValueStr: "v"}},
+				RemainingTtl: ttl,
+			})
+		}
+	}
+	require.NotEmpty(t, srcFake.scanEntries, "need at least one key that maps to dst with this ring topology")
 
 	_, srcCancel := context.WithCancel(ctx)
 	_, dstCancel := context.WithCancel(ctx)
