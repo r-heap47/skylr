@@ -114,8 +114,8 @@ func TestMigrateKeys_MovesKeysToNewShard(t *testing.T) {
 
 	srcConn := newShardConn(t, srcAddr)
 	dstConn := newShardConn(t, dstAddr)
-	defer srcConn.Close()
-	defer dstConn.Close()
+	defer func() { _ = srcConn.Close() }()
+	defer func() { _ = dstConn.Close() }()
 
 	ovr := New(ctx, testConfig())
 
@@ -200,7 +200,7 @@ func TestMigrateKeys_NoSourceShards(t *testing.T) {
 	defer dstStop()
 
 	dstConn := newShardConn(t, dstAddr)
-	defer dstConn.Close()
+	defer func() { _ = dstConn.Close() }()
 
 	ovr := New(ctx, testConfig())
 
@@ -242,8 +242,8 @@ func TestMigrateFromShard_DeleteFailure_NotCountedAsMoved(t *testing.T) {
 
 	srcConn := newShardConn(t, srcAddr)
 	dstConn := newShardConn(t, dstAddr)
-	defer srcConn.Close()
-	defer dstConn.Close()
+	defer func() { _ = srcConn.Close() }()
+	defer func() { _ = dstConn.Close() }()
 
 	ovr := New(ctx, testConfig())
 	ovr.ring.AddNode(srcAddr)
@@ -296,8 +296,8 @@ func TestMigrateFromShard_ScanEOF(t *testing.T) {
 
 	srcConn := newShardConn(t, srcAddr)
 	dstConn := newShardConn(t, dstAddr)
-	defer srcConn.Close()
-	defer dstConn.Close()
+	defer func() { _ = srcConn.Close() }()
+	defer func() { _ = dstConn.Close() }()
 
 	ovr := New(ctx, testConfig())
 	ovr.ring.AddNode(srcAddr)
@@ -318,6 +318,7 @@ func TestMigrateFromShard_ScanEOF(t *testing.T) {
 
 // Verify that isStreamEOF correctly identifies io.EOF.
 func TestIsStreamEOF(t *testing.T) {
+	t.Parallel()
 	assert.True(t, isStreamEOF(io.EOF))
 	assert.False(t, isStreamEOF(nil))
 	assert.False(t, isStreamEOF(io.ErrUnexpectedEOF))

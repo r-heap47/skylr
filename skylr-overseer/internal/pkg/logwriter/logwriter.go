@@ -13,7 +13,7 @@ func LinePrefix(prefix string) io.Writer {
 	pr, pw := io.Pipe()
 
 	go func() {
-		defer pr.Close()
+		defer func() { _ = pr.Close() }()
 
 		s := bufio.NewScanner(pr)
 		for s.Scan() {

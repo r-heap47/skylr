@@ -140,6 +140,7 @@ func (p *Provisioner) startShard() (string, error) {
 	args := p.shardArgs(grpcPort, gatewayPort)
 
 	// Run shard as its own process group so we can kill the whole group on Deprovision.
+	// #nosec G204 -- BinaryPath and args come from trusted config.
 	cmd := exec.Command(p.cfg.BinaryPath, args...)
 	cmd.Stdout = logwriter.LinePrefix(fmt.Sprintf("shard %s", addr))
 	cmd.Stderr = logwriter.LinePrefix(fmt.Sprintf("shard %s", addr))
