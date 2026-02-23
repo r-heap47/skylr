@@ -42,7 +42,7 @@ jobs:
           go build -v ./...
 
       - name: Lint ${{ matrix.dir }}
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           version: v2.6.2
           working-directory: ${{ matrix.dir }}
