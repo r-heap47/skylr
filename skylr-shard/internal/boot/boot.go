@@ -25,7 +25,14 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var configPath = flag.String("config", "config/config.yaml", "Path to YAML config file")
+var (
+	configPath   = flag.String("config", "config/config.yaml", "Path to YAML config file")
+	grpcHost     = flag.String("grpc-host", "localhost", "gRPC server host")
+	grpcPort     = flag.String("grpc-port", "", "gRPC server port")
+	gatewayHost  = flag.String("gateway-host", "localhost", "HTTP gateway host")
+	gatewayPort  = flag.String("gateway-port", "", "HTTP gateway port")
+	overseerAddr = flag.String("overseer", "", "Overseer gRPC address (e.g. 127.0.0.1:9000)")
+)
 
 // Run starts the shard application: loads config, initialises storage, gRPC and HTTP servers.
 func Run() error {
@@ -36,11 +43,21 @@ func Run() error {
 		return fmt.Errorf("config.Load: %w", err)
 	}
 
+	if *grpcPort == "" {
+		return fmt.Errorf("-grpc-port is required")
+	}
+	if *gatewayPort == "" {
+		return fmt.Errorf("-gateway-port is required")
+	}
+	if *overseerAddr == "" {
+		return fmt.Errorf("-overseer is required")
+	}
+
 	var (
 		initCtx = context.Background()
 
-		grpcEndpoint = fmt.Sprintf("%s:%s", cfg.GRPC.Host, cfg.GRPC.Port)
-		gwEndpoint   = fmt.Sprintf("%s:%s", cfg.Gateway.Host, cfg.Gateway.Port)
+		grpcEndpoint = fmt.Sprintf("%s:%s", *grpcHost, *grpcPort)
+		gwEndpoint   = fmt.Sprintf("%s:%s", *gatewayHost, *gatewayPort)
 
 		startCh = make(chan struct{})
 	)
@@ -135,7 +152,7 @@ func Run() error {
 	// === DIALING OVERSEER ===
 
 	ovrConn, err := grpc.NewClient(
-		cfg.Overseer.Address,
+		*overseerAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
