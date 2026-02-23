@@ -139,6 +139,28 @@ func (ovr *Overseer) ShardCount() int {
 	return len(ovr.shards)
 }
 
+// HasShard returns true if addr is registered on the overseer.
+func (ovr *Overseer) HasShard(addr string) bool {
+	ovr.shardsMu.RLock()
+	defer ovr.shardsMu.RUnlock()
+
+	_, ok := ovr.shards[addr]
+	return ok
+}
+
+// Unregister removes the shard at addr from the ring and releases its resources.
+func (ovr *Overseer) Unregister(addr string) error {
+	ovr.shardsMu.Lock()
+	defer ovr.shardsMu.Unlock()
+
+	s, ok := ovr.shards[addr]
+	if !ok {
+		return fmt.Errorf("shard %q not found", addr)
+	}
+	ovr.removeShard(s)
+	return nil
+}
+
 // Lookup returns the address of the shard responsible for the given key
 // according to the consistent hash ring.
 func (ovr *Overseer) Lookup(key string) (string, error) {
@@ -168,7 +190,7 @@ func (ovr *Overseer) checkForShardFailures(ctx context.Context) {
 				select {
 				case err := <-s.errChan:
 					log.Printf("[ERROR] shard %s reported failure: %s", addr, err)
-					ovr.removeShardAndReshard(s)
+					ovr.removeShard(s)
 				default:
 				}
 			}
@@ -198,11 +220,11 @@ func (ovr *Overseer) addShardAndReshard(s shard) {
 	go ovr.migrateKeys(ovr.ovsCtx, oldRing, s.addr)
 }
 
-// removeShardAndReshard removes a shard, releases its resources, and updates the hash ring.
+// removeShard removes a shard, releases its resources, and updates the hash ring.
 // Must be called with shardsMu held.
 // When a shard fails its in-memory data is lost; the ring update ensures future
 // lookups are routed to the remaining shards.
-func (ovr *Overseer) removeShardAndReshard(oldShard shard) {
+func (ovr *Overseer) removeShard(oldShard shard) {
 	ovr.ring.RemoveNode(oldShard.addr)
 	delete(ovr.shards, oldShard.addr)
 

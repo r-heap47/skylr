@@ -27,8 +27,26 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 
 // Config is the top-level application configuration.
 type Config struct {
-	GRPC     GRPCConfig     `yaml:"grpc"`
-	Overseer OverseerConfig `yaml:"overseer"`
+	GRPC        GRPCConfig        `yaml:"grpc"`
+	Overseer    OverseerConfig    `yaml:"overseer"`
+	Provisioner ProvisionerConfig `yaml:"provisioner"`
+}
+
+// ProvisionerConfig holds provisioner settings. When type is empty, provisioning is disabled.
+type ProvisionerConfig struct {
+	Type    string                 `yaml:"type"`
+	Process ProcessProvisionerCfg  `yaml:"process"`
+}
+
+// ProcessProvisionerCfg holds ProcessProvisioner-specific config.
+type ProcessProvisionerCfg struct {
+	BinaryPath      string `yaml:"binary_path"`
+	ConfigPath      string `yaml:"config_path"`
+	OverseerAddress string `yaml:"overseer_address"`
+	GRPCHost        string `yaml:"grpc_host"`
+	GRPCPortMin     int    `yaml:"grpc_port_min"`
+	GRPCPortMax     int    `yaml:"grpc_port_max"`
+	MaxShards       int    `yaml:"max_shards"`
 }
 
 // GRPCConfig holds the gRPC server host and port.

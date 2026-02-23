@@ -163,7 +163,7 @@ func TestLookup_AfterShardRemoval(t *testing.T) {
 	// remove shard19020 by directly calling the internal method
 	ovr.shardsMu.Lock()
 	s := ovr.shards["localhost:19020"]
-	ovr.removeShardAndReshard(s)
+	ovr.removeShard(s)
 	ovr.shardsMu.Unlock()
 
 	require.Equal(t, 1, ovr.ShardCount())

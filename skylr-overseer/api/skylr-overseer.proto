@@ -22,6 +22,31 @@ service Overseer {
             get: "/api/v1/lookup"
         };
     }
+
+    // Provision creates a new shard via the provisioner and returns its address when registered.
+    rpc Provision(google.protobuf.Empty) returns (ProvisionResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/provision"
+        };
+    }
+
+    // Deprovision removes the shard at the given address from the ring and stops it.
+    rpc Deprovision(DeprovisionRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/api/v1/deprovision"
+            body: "*"
+        };
+    }
+}
+
+// ProvisionResponse - provision response
+message ProvisionResponse {
+    string address = 1;
+}
+
+// DeprovisionRequest - deprovision request params
+message DeprovisionRequest {
+    string address = 1;
 }
 
 // RegisterRequest - register request params
