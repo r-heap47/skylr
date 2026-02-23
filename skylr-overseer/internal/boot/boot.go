@@ -39,6 +39,7 @@ func Run() error {
 		ObserverDelay:              utils.Const(cfg.Overseer.ObserverDelay.Duration),
 		ObserverMetricsTimeout:     utils.Const(cfg.Overseer.ObserverMetricsTimeout.Duration),
 		ObserverErrorThreshold:     utils.Const(cfg.Overseer.ObserverErrorThreshold),
+		VirtualNodesPerShard:       utils.Const(cfg.Overseer.VirtualNodesPerShard),
 	})
 
 	impl := v1.New(&v1.Config{

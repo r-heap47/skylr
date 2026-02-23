@@ -3,6 +3,7 @@ package noeviction
 import (
 	"context"
 	"fmt"
+	"iter"
 	"log"
 	"sync"
 	"time"
@@ -144,6 +145,27 @@ func (s *noeviction) Clean(ctx context.Context, now time.Time) error {
 	}
 
 	return nil
+}
+
+func (s *noeviction) Scan(ctx context.Context) iter.Seq2[*storage.Entry, error] {
+	return func(yield func(*storage.Entry, error) bool) {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+
+		now := s.curTime(ctx)
+		for _, entry := range s.store {
+			if err := utils.CtxDone(ctx); err != nil {
+				yield(nil, err)
+				return
+			}
+			if now.After(entry.Exp) {
+				continue
+			}
+			if !yield(&entry, nil) {
+				return
+			}
+		}
+	}
 }
 
 // cleanupLoop periodically cleanes up expired entries

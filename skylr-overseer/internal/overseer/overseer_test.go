@@ -29,6 +29,7 @@ func testConfig() Config {
 		ObserverDelay:              utils.Const(time.Millisecond),
 		ObserverMetricsTimeout:     utils.Const(100 * time.Millisecond),
 		ObserverErrorThreshold:     utils.Const(3),
+		VirtualNodesPerShard:       utils.Const(10),
 	}
 }
 
@@ -80,6 +81,99 @@ func TestRegister_CancelledCtx(t *testing.T) {
 	err := ovr.Register(cancelledCtx, "localhost:19002")
 	require.Error(t, err)
 	assert.Equal(t, 0, ovr.ShardCount())
+}
+
+// TestLookup_EmptyRing verifies that Lookup returns an error when no shards are registered.
+func TestLookup_EmptyRing(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ovr := New(ctx, testConfig())
+
+	_, err := ovr.Lookup("some-key")
+	require.Error(t, err)
+}
+
+// TestLookup_ReturnsRegisteredShard verifies that Lookup returns the address of
+// the registered shard after registration.
+func TestLookup_ReturnsRegisteredShard(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ovr := New(ctx, testConfig())
+	require.NoError(t, ovr.Register(ctx, "localhost:19010"))
+
+	addr, err := ovr.Lookup("any-key")
+	require.NoError(t, err)
+	assert.Equal(t, "localhost:19010", addr)
+}
+
+// TestLookup_Deterministic verifies that the same key always maps to the same shard.
+func TestLookup_Deterministic(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ovr := New(ctx, testConfig())
+	require.NoError(t, ovr.Register(ctx, "localhost:19011"))
+	require.NoError(t, ovr.Register(ctx, "localhost:19012"))
+
+	const key = "deterministic-key"
+	first, err := ovr.Lookup(key)
+	require.NoError(t, err)
+
+	for range 50 {
+		addr, err := ovr.Lookup(key)
+		require.NoError(t, err)
+		assert.Equal(t, first, addr)
+	}
+}
+
+// TestLookup_AfterShardRemoval verifies that after a shard is removed from the ring,
+// Lookup routes exclusively to the remaining shard.
+func TestLookup_AfterShardRemoval(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ovr := New(ctx, testConfig())
+
+	conn1, err := dialFakeConn()
+	require.NoError(t, err)
+	conn2, err := dialFakeConn()
+	require.NoError(t, err)
+
+	_, obsCancel1 := context.WithCancel(ctx)
+	_, obsCancel2 := context.WithCancel(ctx)
+
+	errChan1 := make(chan error, 1)
+	errChan2 := make(chan error, 1)
+
+	ovr.addShardAndReshardLocked(shard{addr: "localhost:19020", conn: conn1, cancel: obsCancel1, errChan: errChan1})
+	ovr.addShardAndReshardLocked(shard{addr: "localhost:19021", conn: conn2, cancel: obsCancel2, errChan: errChan2})
+
+	require.Equal(t, 2, ovr.ShardCount())
+
+	// remove shard19020 by directly calling the internal method
+	ovr.shardsMu.Lock()
+	s := ovr.shards["localhost:19020"]
+	ovr.removeShardAndReshard(s)
+	ovr.shardsMu.Unlock()
+
+	require.Equal(t, 1, ovr.ShardCount())
+
+	// every key must now map to the only remaining shard
+	for _, key := range []string{"k1", "k2", "k3", "some-other-key"} {
+		addr, err := ovr.Lookup(key)
+		require.NoError(t, err)
+		assert.Equal(t, "localhost:19021", addr, "key %q should map to the remaining shard", key)
+	}
 }
 
 // TestCheckForShardFailures_RemovesFailedShard verifies that when errChan

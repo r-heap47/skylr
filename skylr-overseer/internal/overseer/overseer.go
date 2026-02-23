@@ -7,17 +7,22 @@ import (
 	"sync"
 	"time"
 
+	"github.com/r-heap47/skylr/skylr-overseer/internal/hashring"
 	pbshard "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-shard"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/pkg/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// defaultVirtualNodes is used when VirtualNodesPerShard is not configured.
+const defaultVirtualNodes = 150
+
 // Overseer - Shard coordinator
 type Overseer struct {
 	shards   map[string]shard
 	shardsMu *sync.RWMutex
 
+	ring   *hashring.HashRing
 	ovsCtx context.Context // root context; lives for the entire overseer lifetime
 
 	observerErrorThreshold     utils.Provider[int]
@@ -30,6 +35,7 @@ type Overseer struct {
 type shard struct {
 	addr    string
 	conn    *grpc.ClientConn
+	client  pbshard.ShardClient
 	cancel  context.CancelFunc // stops the observer goroutine
 	errChan <-chan error
 }
@@ -42,13 +48,24 @@ type Config struct {
 	// ObserverErrorThreshold is the number of consecutive Metrics errors
 	// before a shard is considered failed and removed.
 	ObserverErrorThreshold utils.Provider[int]
+	// VirtualNodesPerShard is the number of virtual nodes placed on the consistent
+	// hash ring per physical shard. Defaults to 150.
+	VirtualNodesPerShard utils.Provider[int]
 }
 
 // New creates new Overseer
 func New(ovsCtx context.Context, cfg Config) *Overseer {
+	vnodeCount := defaultVirtualNodes
+	if cfg.VirtualNodesPerShard != nil {
+		if v := cfg.VirtualNodesPerShard(ovsCtx); v > 0 {
+			vnodeCount = v
+		}
+	}
+
 	ovr := &Overseer{
 		shards:                     make(map[string]shard),
 		shardsMu:                   &sync.RWMutex{},
+		ring:                       hashring.New(vnodeCount),
 		ovsCtx:                     ovsCtx,
 		observerErrorThreshold:     cfg.ObserverErrorThreshold,
 		observerMetricsTimeout:     cfg.ObserverMetricsTimeout,
@@ -104,6 +121,7 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 	ovr.addShardAndReshardLocked(shard{
 		addr:    addr,
 		conn:    shardConn,
+		client:  shardClient,
 		cancel:  obsCancel,
 		errChan: shardErrChan,
 	})
@@ -117,7 +135,19 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 func (ovr *Overseer) ShardCount() int {
 	ovr.shardsMu.RLock()
 	defer ovr.shardsMu.RUnlock()
+
 	return len(ovr.shards)
+}
+
+// Lookup returns the address of the shard responsible for the given key
+// according to the consistent hash ring.
+func (ovr *Overseer) Lookup(key string) (string, error) {
+	addr, err := ovr.ring.GetNode(key)
+	if err != nil {
+		return "", fmt.Errorf("ring.GetNode: %w", err)
+	}
+
+	return addr, nil
 }
 
 // checkForShardFailures checks that none of the shards have disconnected.
@@ -156,25 +186,24 @@ func (ovr *Overseer) addShardAndReshardLocked(s shard) {
 	ovr.addShardAndReshard(s)
 }
 
-// addShardAndReshard adds a new shard. Must be called with shardsMu held.
-func (ovr *Overseer) addShardAndReshard(s shard) {
-	ovr.shards[s.addr] = s
-	log.Printf("[INFO] shard %s added. total shards: %d\n", s.addr, len(ovr.shards))
-	log.Printf("[WARN] APPEND RESHARDING WOULD BE INITIATED HERE\n")
-}
-
-// removeShardAndReshardLocked acquires the write lock and removes the shard.
-// nolint
-func (ovr *Overseer) removeShardAndReshardLocked(oldShard shard) {
-	ovr.shardsMu.Lock()
-	defer ovr.shardsMu.Unlock()
-
-	ovr.removeShardAndReshard(oldShard)
-}
-
-// removeShardAndReshard removes a shard and releases its resources.
+// addShardAndReshard adds a new shard and updates the hash ring.
 // Must be called with shardsMu held.
+func (ovr *Overseer) addShardAndReshard(s shard) {
+	oldRing := ovr.ring.Snapshot()
+	ovr.ring.AddNode(s.addr)
+	ovr.shards[s.addr] = s
+
+	log.Printf("[INFO] shard %s added. total shards: %d\n", s.addr, len(ovr.shards))
+
+	go ovr.migrateKeys(ovr.ovsCtx, oldRing, s.addr)
+}
+
+// removeShardAndReshard removes a shard, releases its resources, and updates the hash ring.
+// Must be called with shardsMu held.
+// When a shard fails its in-memory data is lost; the ring update ensures future
+// lookups are routed to the remaining shards.
 func (ovr *Overseer) removeShardAndReshard(oldShard shard) {
+	ovr.ring.RemoveNode(oldShard.addr)
 	delete(ovr.shards, oldShard.addr)
 
 	// stop the observer goroutine and close the gRPC connection
@@ -184,5 +213,4 @@ func (ovr *Overseer) removeShardAndReshard(oldShard shard) {
 	}
 
 	log.Printf("[INFO] shard %s removed. total shards: %d\n", oldShard.addr, len(ovr.shards))
-	log.Printf("[WARN] REMOVE RESHARDING WOULD BE INITIATED HERE\n")
 }

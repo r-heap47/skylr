@@ -4,6 +4,7 @@ package mocks
 
 import (
 	context "context"
+	"errors"
 	"sync"
 	mm_atomic "sync/atomic"
 	mm_time "time"
@@ -46,6 +47,12 @@ type ShardClientMock struct {
 	afterSetCounter  uint64
 	beforeSetCounter uint64
 	SetMock          mShardClientMockSet
+}
+
+// Scan is a minimal stub that satisfies the mm_pbshard.ShardClient interface.
+// Observer tests do not exercise Scan; actual Scan usage is tested via integration tests.
+func (m *ShardClientMock) Scan(_ context.Context, _ *empty.Empty, _ ...grpc.CallOption) (grpc.ServerStreamingClient[mm_pbshard.ScanResponse], error) {
+	return nil, errors.New("Scan: not implemented in mock")
 }
 
 // NewShardClientMock returns a mock for mm_pbshard.ShardClient

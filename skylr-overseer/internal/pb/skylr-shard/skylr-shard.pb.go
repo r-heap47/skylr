@@ -442,7 +442,7 @@ type InputEntry struct {
 	// entry
 	Entry *Entry `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
 	// ttl
-	Ttl           *duration.Duration `protobuf:"bytes,7,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	Ttl           *duration.Duration `protobuf:"bytes,2,opt,name=ttl,proto3" json:"ttl,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -491,6 +491,61 @@ func (x *InputEntry) GetTtl() *duration.Duration {
 	return nil
 }
 
+// ScanResponse - a single entry streamed during Scan
+type ScanResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// entry is the stored key-value pair
+	Entry *Entry `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+	// remaining_ttl is the remaining time-to-live for this entry
+	RemainingTtl  *duration.Duration `protobuf:"bytes,2,opt,name=remaining_ttl,json=remainingTtl,proto3" json:"remaining_ttl,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ScanResponse) Reset() {
+	*x = ScanResponse{}
+	mi := &file_skylr_shard_skylr_shard_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScanResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanResponse) ProtoMessage() {}
+
+func (x *ScanResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_skylr_shard_skylr_shard_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanResponse.ProtoReflect.Descriptor instead.
+func (*ScanResponse) Descriptor() ([]byte, []int) {
+	return file_skylr_shard_skylr_shard_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ScanResponse) GetEntry() *Entry {
+	if x != nil {
+		return x.Entry
+	}
+	return nil
+}
+
+func (x *ScanResponse) GetRemainingTtl() *duration.Duration {
+	if x != nil {
+		return x.RemainingTtl
+	}
+	return nil
+}
+
 // MetricsResponse - service metrics snapshot
 type MetricsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -510,7 +565,7 @@ type MetricsResponse struct {
 
 func (x *MetricsResponse) Reset() {
 	*x = MetricsResponse{}
-	mi := &file_skylr_shard_skylr_shard_proto_msgTypes[8]
+	mi := &file_skylr_shard_skylr_shard_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -522,7 +577,7 @@ func (x *MetricsResponse) String() string {
 func (*MetricsResponse) ProtoMessage() {}
 
 func (x *MetricsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_skylr_shard_skylr_shard_proto_msgTypes[8]
+	mi := &file_skylr_shard_skylr_shard_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -535,7 +590,7 @@ func (x *MetricsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsResponse.ProtoReflect.Descriptor instead.
 func (*MetricsResponse) Descriptor() ([]byte, []int) {
-	return file_skylr_shard_skylr_shard_proto_rawDescGZIP(), []int{8}
+	return file_skylr_shard_skylr_shard_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *MetricsResponse) GetCpuUsage() float64 {
@@ -619,7 +674,10 @@ const file_skylr_shard_skylr_shard_proto_rawDesc = "" +
 	"\n" +
 	"InputEntry\x12+\n" +
 	"\x05entry\x18\x01 \x01(\v2\x15.skylr_shard.v1.EntryR\x05entry\x12+\n" +
-	"\x03ttl\x18\a \x01(\v2\x19.google.protobuf.DurationR\x03ttl\"\x99\x02\n" +
+	"\x03ttl\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x03ttl\"{\n" +
+	"\fScanResponse\x12+\n" +
+	"\x05entry\x18\x01 \x01(\v2\x15.skylr_shard.v1.EntryR\x05entry\x12>\n" +
+	"\rremaining_ttl\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\fremainingTtl\"\x99\x02\n" +
 	"\x0fMetricsResponse\x12\x1b\n" +
 	"\tcpu_usage\x18\x01 \x01(\x01R\bcpuUsage\x12(\n" +
 	"\x10memory_rss_bytes\x18\x02 \x01(\x04R\x0ememoryRssBytes\x125\n" +
@@ -629,12 +687,13 @@ const file_skylr_shard_skylr_shard_proto_rawDesc = "" +
 	"\n" +
 	"total_sets\x18\x05 \x01(\x04R\ttotalSets\x12#\n" +
 	"\rtotal_deletes\x18\x06 \x01(\x04R\ftotalDeletes\x12%\n" +
-	"\x0euptime_seconds\x18\a \x01(\x03R\ruptimeSeconds2\xed\x02\n" +
+	"\x0euptime_seconds\x18\a \x01(\x03R\ruptimeSeconds2\xad\x03\n" +
 	"\x05Shard\x12S\n" +
 	"\x03Get\x12\x1a.skylr_shard.v1.GetRequest\x1a\x1b.skylr_shard.v1.GetResponse\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/api/v1/get\x12Q\n" +
 	"\x03Set\x12\x1a.skylr_shard.v1.SetRequest\x1a\x16.google.protobuf.Empty\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/api/v1/set\x12_\n" +
 	"\x06Delete\x12\x1d.skylr_shard.v1.DeleteRequest\x1a\x1e.skylr_shard.v1.DeleteResponse\"\x16\x82\xd3\xe4\x93\x02\x10*\x0e/api/v1/delete\x12[\n" +
-	"\aMetrics\x12\x16.google.protobuf.Empty\x1a\x1f.skylr_shard.v1.MetricsResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/v1/metricsB\x17Z\x15./skylr-shard;pbshardb\x06proto3"
+	"\aMetrics\x12\x16.google.protobuf.Empty\x1a\x1f.skylr_shard.v1.MetricsResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/v1/metrics\x12>\n" +
+	"\x04Scan\x12\x16.google.protobuf.Empty\x1a\x1c.skylr_shard.v1.ScanResponse0\x01B\x17Z\x15./skylr-shard;pbshardb\x06proto3"
 
 var (
 	file_skylr_shard_skylr_shard_proto_rawDescOnce sync.Once
@@ -648,7 +707,7 @@ func file_skylr_shard_skylr_shard_proto_rawDescGZIP() []byte {
 	return file_skylr_shard_skylr_shard_proto_rawDescData
 }
 
-var file_skylr_shard_skylr_shard_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_skylr_shard_skylr_shard_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_skylr_shard_skylr_shard_proto_goTypes = []any{
 	(*GetRequest)(nil),        // 0: skylr_shard.v1.GetRequest
 	(*GetResponse)(nil),       // 1: skylr_shard.v1.GetResponse
@@ -658,28 +717,33 @@ var file_skylr_shard_skylr_shard_proto_goTypes = []any{
 	(*DeleteResponse)(nil),    // 5: skylr_shard.v1.DeleteResponse
 	(*Entry)(nil),             // 6: skylr_shard.v1.Entry
 	(*InputEntry)(nil),        // 7: skylr_shard.v1.InputEntry
-	(*MetricsResponse)(nil),   // 8: skylr_shard.v1.MetricsResponse
-	(*duration.Duration)(nil), // 9: google.protobuf.Duration
-	(*empty.Empty)(nil),       // 10: google.protobuf.Empty
+	(*ScanResponse)(nil),      // 8: skylr_shard.v1.ScanResponse
+	(*MetricsResponse)(nil),   // 9: skylr_shard.v1.MetricsResponse
+	(*duration.Duration)(nil), // 10: google.protobuf.Duration
+	(*empty.Empty)(nil),       // 11: google.protobuf.Empty
 }
 var file_skylr_shard_skylr_shard_proto_depIdxs = []int32{
 	6,  // 0: skylr_shard.v1.GetResponse.entry:type_name -> skylr_shard.v1.Entry
 	7,  // 1: skylr_shard.v1.SetRequest.input:type_name -> skylr_shard.v1.InputEntry
 	6,  // 2: skylr_shard.v1.InputEntry.entry:type_name -> skylr_shard.v1.Entry
-	9,  // 3: skylr_shard.v1.InputEntry.ttl:type_name -> google.protobuf.Duration
-	0,  // 4: skylr_shard.v1.Shard.Get:input_type -> skylr_shard.v1.GetRequest
-	2,  // 5: skylr_shard.v1.Shard.Set:input_type -> skylr_shard.v1.SetRequest
-	4,  // 6: skylr_shard.v1.Shard.Delete:input_type -> skylr_shard.v1.DeleteRequest
-	10, // 7: skylr_shard.v1.Shard.Metrics:input_type -> google.protobuf.Empty
-	1,  // 8: skylr_shard.v1.Shard.Get:output_type -> skylr_shard.v1.GetResponse
-	10, // 9: skylr_shard.v1.Shard.Set:output_type -> google.protobuf.Empty
-	5,  // 10: skylr_shard.v1.Shard.Delete:output_type -> skylr_shard.v1.DeleteResponse
-	8,  // 11: skylr_shard.v1.Shard.Metrics:output_type -> skylr_shard.v1.MetricsResponse
-	8,  // [8:12] is the sub-list for method output_type
-	4,  // [4:8] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	10, // 3: skylr_shard.v1.InputEntry.ttl:type_name -> google.protobuf.Duration
+	6,  // 4: skylr_shard.v1.ScanResponse.entry:type_name -> skylr_shard.v1.Entry
+	10, // 5: skylr_shard.v1.ScanResponse.remaining_ttl:type_name -> google.protobuf.Duration
+	0,  // 6: skylr_shard.v1.Shard.Get:input_type -> skylr_shard.v1.GetRequest
+	2,  // 7: skylr_shard.v1.Shard.Set:input_type -> skylr_shard.v1.SetRequest
+	4,  // 8: skylr_shard.v1.Shard.Delete:input_type -> skylr_shard.v1.DeleteRequest
+	11, // 9: skylr_shard.v1.Shard.Metrics:input_type -> google.protobuf.Empty
+	11, // 10: skylr_shard.v1.Shard.Scan:input_type -> google.protobuf.Empty
+	1,  // 11: skylr_shard.v1.Shard.Get:output_type -> skylr_shard.v1.GetResponse
+	11, // 12: skylr_shard.v1.Shard.Set:output_type -> google.protobuf.Empty
+	5,  // 13: skylr_shard.v1.Shard.Delete:output_type -> skylr_shard.v1.DeleteResponse
+	9,  // 14: skylr_shard.v1.Shard.Metrics:output_type -> skylr_shard.v1.MetricsResponse
+	8,  // 15: skylr_shard.v1.Shard.Scan:output_type -> skylr_shard.v1.ScanResponse
+	11, // [11:16] is the sub-list for method output_type
+	6,  // [6:11] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_skylr_shard_skylr_shard_proto_init() }
@@ -700,7 +764,7 @@ func file_skylr_shard_skylr_shard_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_skylr_shard_skylr_shard_proto_rawDesc), len(file_skylr_shard_skylr_shard_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

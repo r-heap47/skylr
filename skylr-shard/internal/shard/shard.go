@@ -3,6 +3,8 @@ package shard
 import (
 	"context"
 	"fmt"
+	"iter"
+	"log"
 	"time"
 
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
@@ -92,4 +94,51 @@ func (sh *Shard) Set(ctx context.Context, in *pbshard.InputEntry) error {
 // Returns whether the key existed before deletion
 func (sh *Shard) Delete(ctx context.Context, k string) (bool, error) {
 	return sh.storage.Delete(ctx, k)
+}
+
+// ScanEntry is a single entry produced by Scan, carrying the protobuf entry
+// and the remaining TTL at the time the scan was taken.
+type ScanEntry struct {
+	Entry        *pbshard.Entry
+	RemainingTTL time.Duration
+}
+
+// Scan yields all non-expired entries as protobuf-ready structs.
+func (sh *Shard) Scan(ctx context.Context) iter.Seq2[*ScanEntry, error] {
+	return func(yield func(*ScanEntry, error) bool) {
+		now := sh.curTime(ctx)
+
+		for entry, err := range sh.storage.Scan(ctx) {
+			if err != nil {
+				yield(nil, err)
+				return
+			}
+			if entry == nil {
+				log.Println("[WARN] Shard.Scan: received nil entry")
+				continue
+			}
+
+			pbEntry := &pbshard.Entry{Key: entry.K}
+			switch v := entry.V.(type) {
+			case string:
+				pbEntry.Value = &pbshard.Entry_ValueStr{ValueStr: v}
+			case int64:
+				pbEntry.Value = &pbshard.Entry_ValueInt64{ValueInt64: v}
+			case int32:
+				pbEntry.Value = &pbshard.Entry_ValueInt32{ValueInt32: v}
+			case float64:
+				pbEntry.Value = &pbshard.Entry_ValueDouble{ValueDouble: v}
+			case float32:
+				pbEntry.Value = &pbshard.Entry_ValueFloat{ValueFloat: v}
+			default:
+				yield(nil, fmt.Errorf("unsupported value type %T for key %q", v, entry.K))
+				return
+			}
+
+			remaining := entry.Exp.Sub(now)
+			if !yield(&ScanEntry{Entry: pbEntry, RemainingTTL: remaining}, nil) {
+				return
+			}
+		}
+	}
 }
