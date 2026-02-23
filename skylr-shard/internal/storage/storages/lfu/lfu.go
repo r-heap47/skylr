@@ -3,6 +3,7 @@ package lfu
 import (
 	"context"
 	"errors"
+	"iter"
 	"time"
 
 	"github.com/r-heap47/skylr/skylr-shard/internal/storage"
@@ -30,6 +31,12 @@ func (l *lfu) Delete(_ context.Context, _ string) (bool, error) {
 
 func (l *lfu) Clean(_ context.Context, _ time.Time) error {
 	return errors.New("not implemented")
+}
+
+func (l *lfu) Scan(_ context.Context) iter.Seq2[*storage.Entry, error] {
+	return func(yield func(*storage.Entry, error) bool) {
+		yield(nil, errors.New("not implemented"))
+	}
 }
 
 func (l *lfu) Len(_ context.Context) (int, error) {

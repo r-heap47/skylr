@@ -40,6 +40,12 @@ service Shard {
             get: "/api/v1/metrics"
         };
     }
+
+    // === MIGRATION ===
+
+    // Scan streams all non-expired entries from the shard's storage.
+    // Used by the Overseer for key migration when a new shard is added.
+    rpc Scan(google.protobuf.Empty) returns (stream ScanResponse);
 }
 
 // GetRequest - get request params
@@ -99,6 +105,14 @@ message InputEntry {
     Entry entry = 1;
     // ttl
     google.protobuf.Duration ttl = 2;
+}
+
+// ScanResponse - a single entry streamed during Scan
+message ScanResponse {
+    // entry is the stored key-value pair
+    Entry entry = 1;
+    // remaining_ttl is the remaining time-to-live for this entry
+    google.protobuf.Duration remaining_ttl = 2;
 }
 
 // MetricsResponse - service metrics snapshot

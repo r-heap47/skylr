@@ -43,6 +43,10 @@ type OverseerConfig struct {
 	ObserverDelay              Duration `yaml:"observer_delay"`
 	ObserverMetricsTimeout     Duration `yaml:"observer_metrics_timeout"`
 	ObserverErrorThreshold     int      `yaml:"observer_error_threshold"`
+	// VirtualNodesPerShard is the number of virtual nodes placed on the consistent
+	// hash ring per physical shard. Higher values improve key distribution at the
+	// cost of more memory. Defaults to 150 when not set.
+	VirtualNodesPerShard int `yaml:"virtual_nodes_per_shard"`
 }
 
 // Load reads and parses the YAML config file at the given path.

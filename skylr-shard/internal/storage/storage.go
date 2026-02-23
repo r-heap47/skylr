@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"iter"
 	"time"
 )
 
@@ -16,6 +17,9 @@ type Storage interface {
 	Delete(ctx context.Context, k string) (bool, error)
 	// Clean cleans up expired entries
 	Clean(ctx context.Context, now time.Time) error
+	// Scan yields all non-expired entries. It is intended for key migration and
+	// should be called with a context that carries an appropriate deadline.
+	Scan(ctx context.Context) iter.Seq2[*Entry, error]
 }
 
 // Entry - key-value pair with additional data

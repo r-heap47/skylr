@@ -16,6 +16,37 @@
     "application/json"
   ],
   "paths": {
+    "/api/v1/lookup": {
+      "get": {
+        "summary": "Lookup returns the address of the shard responsible for the given key",
+        "operationId": "Overseer_Lookup",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1LookupResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Overseer"
+        ]
+      }
+    },
     "/api/v1/register": {
       "post": {
         "summary": "Register registers a new shard in the system",
@@ -77,6 +108,16 @@
           }
         }
       }
+    },
+    "v1LookupResponse": {
+      "type": "object",
+      "properties": {
+        "shardAddress": {
+          "type": "string",
+          "title": "shard_address is the gRPC address of the shard responsible for the key"
+        }
+      },
+      "title": "LookupResponse - lookup response"
     }
   }
 }

@@ -15,9 +15,27 @@ service Overseer {
             post: "/api/v1/register"
         };
     }
+
+    // Lookup returns the address of the shard responsible for the given key
+    rpc Lookup(LookupRequest) returns (LookupResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/lookup"
+        };
+    }
 }
 
 // RegisterRequest - register request params
 message RegisterRequest {
    string address = 1;
+}
+
+// LookupRequest - lookup request params
+message LookupRequest {
+    string key = 1;
+}
+
+// LookupResponse - lookup response
+message LookupResponse {
+    // shard_address is the gRPC address of the shard responsible for the key
+    string shard_address = 1;
 }

@@ -24,6 +24,7 @@ const (
 	Shard_Set_FullMethodName     = "/skylr_shard.v1.Shard/Set"
 	Shard_Delete_FullMethodName  = "/skylr_shard.v1.Shard/Delete"
 	Shard_Metrics_FullMethodName = "/skylr_shard.v1.Shard/Metrics"
+	Shard_Scan_FullMethodName    = "/skylr_shard.v1.Shard/Scan"
 )
 
 // ShardClient is the client API for Shard service.
@@ -40,6 +41,9 @@ type ShardClient interface {
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	// Metrics returns current service metrics
 	Metrics(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*MetricsResponse, error)
+	// Scan streams all non-expired entries from the shard's storage.
+	// Used by the Overseer for key migration when a new shard is added.
+	Scan(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ScanResponse], error)
 }
 
 type shardClient struct {
@@ -90,6 +94,25 @@ func (c *shardClient) Metrics(ctx context.Context, in *empty.Empty, opts ...grpc
 	return out, nil
 }
 
+func (c *shardClient) Scan(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ScanResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Shard_ServiceDesc.Streams[0], Shard_Scan_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[empty.Empty, ScanResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Shard_ScanClient = grpc.ServerStreamingClient[ScanResponse]
+
 // ShardServer is the server API for Shard service.
 // All implementations must embed UnimplementedShardServer
 // for forward compatibility.
@@ -104,6 +127,9 @@ type ShardServer interface {
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	// Metrics returns current service metrics
 	Metrics(context.Context, *empty.Empty) (*MetricsResponse, error)
+	// Scan streams all non-expired entries from the shard's storage.
+	// Used by the Overseer for key migration when a new shard is added.
+	Scan(*empty.Empty, grpc.ServerStreamingServer[ScanResponse]) error
 	mustEmbedUnimplementedShardServer()
 }
 
@@ -125,6 +151,9 @@ func (UnimplementedShardServer) Delete(context.Context, *DeleteRequest) (*Delete
 }
 func (UnimplementedShardServer) Metrics(context.Context, *empty.Empty) (*MetricsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Metrics not implemented")
+}
+func (UnimplementedShardServer) Scan(*empty.Empty, grpc.ServerStreamingServer[ScanResponse]) error {
+	return status.Error(codes.Unimplemented, "method Scan not implemented")
 }
 func (UnimplementedShardServer) mustEmbedUnimplementedShardServer() {}
 func (UnimplementedShardServer) testEmbeddedByValue()               {}
@@ -219,6 +248,17 @@ func _Shard_Metrics_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Shard_Scan_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(empty.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ShardServer).Scan(m, &grpc.GenericServerStream[empty.Empty, ScanResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Shard_ScanServer = grpc.ServerStreamingServer[ScanResponse]
+
 // Shard_ServiceDesc is the grpc.ServiceDesc for Shard service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -243,6 +283,12 @@ var Shard_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Shard_Metrics_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Scan",
+			Handler:       _Shard_Scan_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "skylr-shard/skylr-shard.proto",
 }
