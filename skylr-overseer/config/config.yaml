@@ -12,10 +12,12 @@ overseer:
 provisioner:
   type: process
   process:
-    binary_path: "./skylr-shard"
+    binary_path: "../skylr-shard/bin/skylr-shard"
     config_path: "../skylr-shard/config/config.yaml"
     overseer_address: "127.0.0.1:9000"
     grpc_host: "localhost"
-    grpc_port_min: 5002
+    grpc_port_min: 5000
     grpc_port_max: 5999
     max_shards: 5
+    registration_timeout: "5s"
+    post_registration_delay: "3s"

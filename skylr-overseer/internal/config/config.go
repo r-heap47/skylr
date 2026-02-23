@@ -34,19 +34,21 @@ type Config struct {
 
 // ProvisionerConfig holds provisioner settings. When type is empty, provisioning is disabled.
 type ProvisionerConfig struct {
-	Type    string                 `yaml:"type"`
-	Process ProcessProvisionerCfg  `yaml:"process"`
+	Type    string                `yaml:"type"`
+	Process ProcessProvisionerCfg `yaml:"process"`
 }
 
 // ProcessProvisionerCfg holds ProcessProvisioner-specific config.
 type ProcessProvisionerCfg struct {
-	BinaryPath      string `yaml:"binary_path"`
-	ConfigPath      string `yaml:"config_path"`
-	OverseerAddress string `yaml:"overseer_address"`
-	GRPCHost        string `yaml:"grpc_host"`
-	GRPCPortMin     int    `yaml:"grpc_port_min"`
-	GRPCPortMax     int    `yaml:"grpc_port_max"`
-	MaxShards       int    `yaml:"max_shards"`
+	BinaryPath            string   `yaml:"binary_path"`
+	ConfigPath            string   `yaml:"config_path"`
+	OverseerAddress       string   `yaml:"overseer_address"`
+	GRPCHost              string   `yaml:"grpc_host"`
+	GRPCPortMin           int      `yaml:"grpc_port_min"`
+	GRPCPortMax           int      `yaml:"grpc_port_max"`
+	MaxShards             int      `yaml:"max_shards"`
+	RegistrationTimeout   Duration `yaml:"registration_timeout"`
+	PostRegistrationDelay Duration `yaml:"post_registration_delay"`
 }
 
 // GRPCConfig holds the gRPC server host and port.

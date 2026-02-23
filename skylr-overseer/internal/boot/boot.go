@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	v1 "github.com/r-heap47/skylr/skylr-overseer/internal/api/grpc/v1"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/config"
@@ -16,6 +17,7 @@ import (
 	pbovr "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-overseer"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/pkg/utils"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner"
+	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner/provisioners/process"
 	"google.golang.org/grpc"
 )
 
@@ -58,16 +60,18 @@ func Run() error {
 		if pc.GRPCHost == "" {
 			pc.GRPCHost = "localhost"
 		}
-		prov = provisioner.NewProcess(provisioner.ProcessConfig{
-			BinaryPath:         pc.BinaryPath,
-			ConfigPath:         pc.ConfigPath,
-			OverseerAddress:    pc.OverseerAddress,
-			GRPCHost:           pc.GRPCHost,
-			GRPCPortMin:        pc.GRPCPortMin,
-			GRPCPortMax:        pc.GRPCPortMax,
-			MaxShards:          pc.MaxShards,
-			ShardCount:         ovr.ShardCount,
-			IsShardRegistered:  ovr.HasShard,
+		prov = process.New(process.Config{
+			BinaryPath:            pc.BinaryPath,
+			ConfigPath:            pc.ConfigPath,
+			OverseerAddress:       pc.OverseerAddress,
+			GRPCHost:              pc.GRPCHost,
+			GRPCPortMin:           pc.GRPCPortMin,
+			GRPCPortMax:           pc.GRPCPortMax,
+			MaxShards:             pc.MaxShards,
+			RegistrationTimeout:   pc.RegistrationTimeout.Duration,
+			PostRegistrationDelay: pc.PostRegistrationDelay.Duration,
+			ShardCount:            ovr.ShardCount,
+			IsShardRegistered:     ovr.HasShard,
 		})
 		log.Printf("[INFO] process provisioner enabled: binary=%s max_shards=%d", pc.BinaryPath, pc.MaxShards)
 	}
@@ -107,6 +111,14 @@ func Run() error {
 
 	// cancel root context — stops checkForShardFailures and all observer goroutines
 	cancel()
+
+	// kill all provisioned shard processes (e.g. process provisioner subprocesses)
+	if sh, ok := prov.(provisioner.Shutdowner); ok {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer shutdownCancel()
+
+		_ = sh.Shutdown(shutdownCtx)
+	}
 
 	return nil
 }

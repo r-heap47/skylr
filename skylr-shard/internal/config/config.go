@@ -28,8 +28,8 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 // Config is the top-level application configuration.
 // GRPC host/port, Gateway host/port, Overseer address come from flags, not config.
 type Config struct {
-	Gateway GatewayConfig  `yaml:"gateway"`
-	Storage StorageConfig  `yaml:"storage"`
+	Gateway  GatewayConfig `yaml:"gateway"`
+	Storage  StorageConfig `yaml:"storage"`
 	Graceful bool          `yaml:"graceful"`
 }
 
