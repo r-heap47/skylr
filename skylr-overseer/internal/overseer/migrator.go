@@ -15,34 +15,44 @@ import (
 //
 // It runs in a background goroutine; errors are logged but never fatal.
 // If the context is cancelled (overseer shutdown) the migration stops early.
-func (ovr *Overseer) migrateKeys(ctx context.Context, oldRing *hashring.HashRing, newAddr string) {
-	if oldRing.Size() == 0 {
+func (ovr *Overseer) migrateKeys(ctx context.Context, snap *hashring.HashRing, newAddr string) {
+	if snap.Size() == 0 {
 		return
 	}
 
-	ovr.shardsMu.RLock()
-	sources := make([]shard, 0, len(ovr.shards))
-	newShard, hasNew := ovr.shards[newAddr]
-	for addr, s := range ovr.shards {
-		if addr != newAddr {
-			sources = append(sources, s)
+	// finding source shards and the destination shard
+	srcs, dst := func() ([]shard, *shard) {
+		ovr.shardsMu.RLock()
+		defer ovr.shardsMu.RUnlock()
+
+		srcs := make([]shard, 0, len(ovr.shards))
+
+		dst, hasDst := ovr.shards[newAddr]
+		if !hasDst {
+			log.Printf("[WARN] migration: new shard %s not found in registry, skipping", newAddr)
+			return nil, nil
 		}
-	}
-	ovr.shardsMu.RUnlock()
 
-	if !hasNew {
-		log.Printf("[WARN] migration: new shard %s not found in registry, skipping", newAddr)
+		for addr, s := range ovr.shards {
+			if addr != newAddr {
+				srcs = append(srcs, s)
+			}
+		}
+
+		log.Printf("[INFO] migration: scanning %d source shard(s) for keys to move to %s", len(srcs), newAddr)
+		return srcs, &dst
+	}()
+	if dst == nil {
 		return
 	}
-
-	log.Printf("[INFO] migration: scanning %d source shard(s) for keys to move to %s", len(sources), newAddr)
 
 	moved := 0
-	for _, src := range sources {
-		n, err := ovr.migrateFromShard(ctx, src, newShard, oldRing, newAddr)
+	for _, src := range srcs {
+		n, err := ovr.migrateFromShard(ctx, src, *dst, snap, newAddr)
 		if err != nil {
 			log.Printf("[WARN] migration: scan of shard %s failed after %d moves: %s", src.addr, n, err)
 		}
+
 		moved += n
 	}
 
@@ -54,7 +64,7 @@ func (ovr *Overseer) migrateFromShard(
 	ctx context.Context,
 	src shard,
 	dst shard,
-	oldRing *hashring.HashRing,
+	snap *hashring.HashRing,
 	newAddr string,
 ) (int, error) {
 	stream, err := src.client.Scan(ctx, &emptypb.Empty{})
@@ -77,8 +87,7 @@ func (ovr *Overseer) migrateFromShard(
 		}
 
 		key := resp.Entry.Key
-
-		if !ovr.keyMovedToNewShard(key, oldRing, newAddr) {
+		if !ovr.keyMovedToNewShard(key, snap, newAddr) {
 			continue
 		}
 
@@ -95,8 +104,8 @@ func (ovr *Overseer) migrateFromShard(
 
 // keyMovedToNewShard reports whether key has been reassigned to newAddr by the
 // ring update: it must belong to newAddr now but have belonged to someone else before.
-func (ovr *Overseer) keyMovedToNewShard(key string, oldRing *hashring.HashRing, newAddr string) bool {
-	oldOwner, err := oldRing.GetNode(key)
+func (ovr *Overseer) keyMovedToNewShard(key string, snap *hashring.HashRing, newAddr string) bool {
+	oldOwner, err := snap.GetNode(key)
 	if err != nil {
 		return false
 	}
@@ -126,7 +135,11 @@ func (ovr *Overseer) moveKey(ctx context.Context, src shard, dst shard, resp *pb
 	}
 
 	_, err = src.client.Delete(ctx, &pbshard.DeleteRequest{Key: resp.Entry.Key})
-	return true, err
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // isStreamEOF returns true when err signals that the server-side stream has ended normally.
