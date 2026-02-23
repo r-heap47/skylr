@@ -20,8 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Overseer_Register_FullMethodName = "/skylr_overseer.v1.Overseer/Register"
-	Overseer_Lookup_FullMethodName   = "/skylr_overseer.v1.Overseer/Lookup"
+	Overseer_Register_FullMethodName    = "/skylr_overseer.v1.Overseer/Register"
+	Overseer_Lookup_FullMethodName      = "/skylr_overseer.v1.Overseer/Lookup"
+	Overseer_Provision_FullMethodName   = "/skylr_overseer.v1.Overseer/Provision"
+	Overseer_Deprovision_FullMethodName = "/skylr_overseer.v1.Overseer/Deprovision"
 )
 
 // OverseerClient is the client API for Overseer service.
@@ -34,6 +36,10 @@ type OverseerClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 	// Lookup returns the address of the shard responsible for the given key
 	Lookup(ctx context.Context, in *LookupRequest, opts ...grpc.CallOption) (*LookupResponse, error)
+	// Provision creates a new shard via the provisioner and returns its address when registered.
+	Provision(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ProvisionResponse, error)
+	// Deprovision removes the shard at the given address from the ring and stops it.
+	Deprovision(ctx context.Context, in *DeprovisionRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 }
 
 type overseerClient struct {
@@ -64,6 +70,26 @@ func (c *overseerClient) Lookup(ctx context.Context, in *LookupRequest, opts ...
 	return out, nil
 }
 
+func (c *overseerClient) Provision(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ProvisionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProvisionResponse)
+	err := c.cc.Invoke(ctx, Overseer_Provision_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *overseerClient) Deprovision(ctx context.Context, in *DeprovisionRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, Overseer_Deprovision_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OverseerServer is the server API for Overseer service.
 // All implementations must embed UnimplementedOverseerServer
 // for forward compatibility.
@@ -74,6 +100,10 @@ type OverseerServer interface {
 	Register(context.Context, *RegisterRequest) (*empty.Empty, error)
 	// Lookup returns the address of the shard responsible for the given key
 	Lookup(context.Context, *LookupRequest) (*LookupResponse, error)
+	// Provision creates a new shard via the provisioner and returns its address when registered.
+	Provision(context.Context, *empty.Empty) (*ProvisionResponse, error)
+	// Deprovision removes the shard at the given address from the ring and stops it.
+	Deprovision(context.Context, *DeprovisionRequest) (*empty.Empty, error)
 	mustEmbedUnimplementedOverseerServer()
 }
 
@@ -89,6 +119,12 @@ func (UnimplementedOverseerServer) Register(context.Context, *RegisterRequest) (
 }
 func (UnimplementedOverseerServer) Lookup(context.Context, *LookupRequest) (*LookupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Lookup not implemented")
+}
+func (UnimplementedOverseerServer) Provision(context.Context, *empty.Empty) (*ProvisionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Provision not implemented")
+}
+func (UnimplementedOverseerServer) Deprovision(context.Context, *DeprovisionRequest) (*empty.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method Deprovision not implemented")
 }
 func (UnimplementedOverseerServer) mustEmbedUnimplementedOverseerServer() {}
 func (UnimplementedOverseerServer) testEmbeddedByValue()                  {}
@@ -147,6 +183,42 @@ func _Overseer_Lookup_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Overseer_Provision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(empty.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OverseerServer).Provision(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Overseer_Provision_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OverseerServer).Provision(ctx, req.(*empty.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Overseer_Deprovision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeprovisionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OverseerServer).Deprovision(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Overseer_Deprovision_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OverseerServer).Deprovision(ctx, req.(*DeprovisionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Overseer_ServiceDesc is the grpc.ServiceDesc for Overseer service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -161,6 +233,14 @@ var Overseer_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Lookup",
 			Handler:    _Overseer_Lookup_Handler,
+		},
+		{
+			MethodName: "Provision",
+			Handler:    _Overseer_Provision_Handler,
+		},
+		{
+			MethodName: "Deprovision",
+			Handler:    _Overseer_Deprovision_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

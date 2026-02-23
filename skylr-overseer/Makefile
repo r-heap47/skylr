@@ -80,8 +80,6 @@ lint: .lint
 	$(info Running lint against all project files...)
 	$(GOLANGCI_BIN) run \
 		--config=.golangci.yaml \
-		--max-issues-per-linter=1000 \
-		--max-same-issues=1000 \
 		./...
 
 .PHONY: deps

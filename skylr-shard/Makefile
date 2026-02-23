@@ -37,6 +37,11 @@ test:
 build:
 	go build -v ./...
 
+.PHONY: build-bin
+build-bin:
+	mkdir -p $(LOCAL_BIN)
+	go build -o $(LOCAL_BIN)/skylr-shard -v ./cmd
+
 .PHONY: format
 format:
 	smartimports -local "gitlab.ozon.ru/ob/marx/"
@@ -80,8 +85,6 @@ lint: .lint
 	$(info Running lint against all project files...)
 	$(GOLANGCI_BIN) run \
 		--config=.golangci.yaml \
-		--max-issues-per-linter=1000 \
-		--max-same-issues=1000 \
 		./...
 
 .PHONY: deps

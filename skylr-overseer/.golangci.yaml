@@ -31,3 +31,5 @@ formatters:
     - gofmt
 
 issues:
+  max-issues-per-linter: 1000
+  max-same-issues: 1000

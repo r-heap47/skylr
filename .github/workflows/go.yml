@@ -28,7 +28,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.25'
-          cache: 'go'
+          cache: true
 
       - name: Verify dependencies ${{ matrix.dir }}
         run: |
@@ -42,11 +42,11 @@ jobs:
           go build -v ./...
 
       - name: Lint ${{ matrix.dir }}
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           version: v2.6.2
           working-directory: ${{ matrix.dir }}
-          args: --config=.golangci.yaml --max-issues-per-linter=1000 --max-same-issues=1000
+          args: --config=.golangci.yaml
 
       - name: Test ${{ matrix.dir }}
         run: |

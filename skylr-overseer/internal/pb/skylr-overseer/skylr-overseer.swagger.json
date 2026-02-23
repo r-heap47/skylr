@@ -16,6 +16,40 @@
     "application/json"
   ],
   "paths": {
+    "/api/v1/deprovision": {
+      "post": {
+        "summary": "Deprovision removes the shard at the given address from the ring and stops it.",
+        "operationId": "Overseer_Deprovision",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1DeprovisionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Overseer"
+        ]
+      }
+    },
     "/api/v1/lookup": {
       "get": {
         "summary": "Lookup returns the address of the shard responsible for the given key",
@@ -42,6 +76,29 @@
             "type": "string"
           }
         ],
+        "tags": [
+          "Overseer"
+        ]
+      }
+    },
+    "/api/v1/provision": {
+      "post": {
+        "summary": "Provision creates a new shard via the provisioner and returns its address when registered.",
+        "operationId": "Overseer_Provision",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ProvisionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
         "tags": [
           "Overseer"
         ]
@@ -109,6 +166,15 @@
         }
       }
     },
+    "v1DeprovisionRequest": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        }
+      },
+      "title": "DeprovisionRequest - deprovision request params"
+    },
     "v1LookupResponse": {
       "type": "object",
       "properties": {
@@ -118,6 +184,15 @@
         }
       },
       "title": "LookupResponse - lookup response"
+    },
+    "v1ProvisionResponse": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        }
+      },
+      "title": "ProvisionResponse - provision response"
     }
   }
 }

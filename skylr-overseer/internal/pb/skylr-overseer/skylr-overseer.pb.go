@@ -23,6 +23,96 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ProvisionResponse - provision response
+type ProvisionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProvisionResponse) Reset() {
+	*x = ProvisionResponse{}
+	mi := &file_skylr_overseer_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProvisionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProvisionResponse) ProtoMessage() {}
+
+func (x *ProvisionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_skylr_overseer_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProvisionResponse.ProtoReflect.Descriptor instead.
+func (*ProvisionResponse) Descriptor() ([]byte, []int) {
+	return file_skylr_overseer_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ProvisionResponse) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+// DeprovisionRequest - deprovision request params
+type DeprovisionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeprovisionRequest) Reset() {
+	*x = DeprovisionRequest{}
+	mi := &file_skylr_overseer_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeprovisionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeprovisionRequest) ProtoMessage() {}
+
+func (x *DeprovisionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_skylr_overseer_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeprovisionRequest.ProtoReflect.Descriptor instead.
+func (*DeprovisionRequest) Descriptor() ([]byte, []int) {
+	return file_skylr_overseer_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *DeprovisionRequest) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
 // RegisterRequest - register request params
 type RegisterRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -33,7 +123,7 @@ type RegisterRequest struct {
 
 func (x *RegisterRequest) Reset() {
 	*x = RegisterRequest{}
-	mi := &file_skylr_overseer_proto_msgTypes[0]
+	mi := &file_skylr_overseer_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +135,7 @@ func (x *RegisterRequest) String() string {
 func (*RegisterRequest) ProtoMessage() {}
 
 func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_skylr_overseer_proto_msgTypes[0]
+	mi := &file_skylr_overseer_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +148,7 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
 func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return file_skylr_overseer_proto_rawDescGZIP(), []int{0}
+	return file_skylr_overseer_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RegisterRequest) GetAddress() string {
@@ -78,7 +168,7 @@ type LookupRequest struct {
 
 func (x *LookupRequest) Reset() {
 	*x = LookupRequest{}
-	mi := &file_skylr_overseer_proto_msgTypes[1]
+	mi := &file_skylr_overseer_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -90,7 +180,7 @@ func (x *LookupRequest) String() string {
 func (*LookupRequest) ProtoMessage() {}
 
 func (x *LookupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_skylr_overseer_proto_msgTypes[1]
+	mi := &file_skylr_overseer_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -103,7 +193,7 @@ func (x *LookupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LookupRequest.ProtoReflect.Descriptor instead.
 func (*LookupRequest) Descriptor() ([]byte, []int) {
-	return file_skylr_overseer_proto_rawDescGZIP(), []int{1}
+	return file_skylr_overseer_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *LookupRequest) GetKey() string {
@@ -124,7 +214,7 @@ type LookupResponse struct {
 
 func (x *LookupResponse) Reset() {
 	*x = LookupResponse{}
-	mi := &file_skylr_overseer_proto_msgTypes[2]
+	mi := &file_skylr_overseer_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -136,7 +226,7 @@ func (x *LookupResponse) String() string {
 func (*LookupResponse) ProtoMessage() {}
 
 func (x *LookupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_skylr_overseer_proto_msgTypes[2]
+	mi := &file_skylr_overseer_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -149,7 +239,7 @@ func (x *LookupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LookupResponse.ProtoReflect.Descriptor instead.
 func (*LookupResponse) Descriptor() ([]byte, []int) {
-	return file_skylr_overseer_proto_rawDescGZIP(), []int{2}
+	return file_skylr_overseer_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *LookupResponse) GetShardAddress() string {
@@ -163,16 +253,22 @@ var File_skylr_overseer_proto protoreflect.FileDescriptor
 
 const file_skylr_overseer_proto_rawDesc = "" +
 	"\n" +
-	"\x14skylr-overseer.proto\x12\x11skylr_overseer.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"+\n" +
+	"\x14skylr-overseer.proto\x12\x11skylr_overseer.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"-\n" +
+	"\x11ProvisionResponse\x12\x18\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\".\n" +
+	"\x12DeprovisionRequest\x12\x18\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\"+\n" +
 	"\x0fRegisterRequest\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\"!\n" +
 	"\rLookupRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\"5\n" +
 	"\x0eLookupResponse\x12#\n" +
-	"\rshard_address\x18\x01 \x01(\tR\fshardAddress2\xd3\x01\n" +
+	"\rshard_address\x18\x01 \x01(\tR\fshardAddress2\xa7\x03\n" +
 	"\bOverseer\x12`\n" +
 	"\bRegister\x12\".skylr_overseer.v1.RegisterRequest\x1a\x16.google.protobuf.Empty\"\x18\x82\xd3\xe4\x93\x02\x12\"\x10/api/v1/register\x12e\n" +
-	"\x06Lookup\x12 .skylr_overseer.v1.LookupRequest\x1a!.skylr_overseer.v1.LookupResponse\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/api/v1/lookupB\x18Z\x16./skylr-overseer;pbovrb\x06proto3"
+	"\x06Lookup\x12 .skylr_overseer.v1.LookupRequest\x1a!.skylr_overseer.v1.LookupResponse\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/api/v1/lookup\x12d\n" +
+	"\tProvision\x12\x16.google.protobuf.Empty\x1a$.skylr_overseer.v1.ProvisionResponse\"\x19\x82\xd3\xe4\x93\x02\x13\"\x11/api/v1/provision\x12l\n" +
+	"\vDeprovision\x12%.skylr_overseer.v1.DeprovisionRequest\x1a\x16.google.protobuf.Empty\"\x1e\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/api/v1/deprovisionB\x18Z\x16./skylr-overseer;pbovrb\x06proto3"
 
 var (
 	file_skylr_overseer_proto_rawDescOnce sync.Once
@@ -186,20 +282,26 @@ func file_skylr_overseer_proto_rawDescGZIP() []byte {
 	return file_skylr_overseer_proto_rawDescData
 }
 
-var file_skylr_overseer_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_skylr_overseer_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_skylr_overseer_proto_goTypes = []any{
-	(*RegisterRequest)(nil), // 0: skylr_overseer.v1.RegisterRequest
-	(*LookupRequest)(nil),   // 1: skylr_overseer.v1.LookupRequest
-	(*LookupResponse)(nil),  // 2: skylr_overseer.v1.LookupResponse
-	(*empty.Empty)(nil),     // 3: google.protobuf.Empty
+	(*ProvisionResponse)(nil),  // 0: skylr_overseer.v1.ProvisionResponse
+	(*DeprovisionRequest)(nil), // 1: skylr_overseer.v1.DeprovisionRequest
+	(*RegisterRequest)(nil),    // 2: skylr_overseer.v1.RegisterRequest
+	(*LookupRequest)(nil),      // 3: skylr_overseer.v1.LookupRequest
+	(*LookupResponse)(nil),     // 4: skylr_overseer.v1.LookupResponse
+	(*empty.Empty)(nil),        // 5: google.protobuf.Empty
 }
 var file_skylr_overseer_proto_depIdxs = []int32{
-	0, // 0: skylr_overseer.v1.Overseer.Register:input_type -> skylr_overseer.v1.RegisterRequest
-	1, // 1: skylr_overseer.v1.Overseer.Lookup:input_type -> skylr_overseer.v1.LookupRequest
-	3, // 2: skylr_overseer.v1.Overseer.Register:output_type -> google.protobuf.Empty
-	2, // 3: skylr_overseer.v1.Overseer.Lookup:output_type -> skylr_overseer.v1.LookupResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	2, // 0: skylr_overseer.v1.Overseer.Register:input_type -> skylr_overseer.v1.RegisterRequest
+	3, // 1: skylr_overseer.v1.Overseer.Lookup:input_type -> skylr_overseer.v1.LookupRequest
+	5, // 2: skylr_overseer.v1.Overseer.Provision:input_type -> google.protobuf.Empty
+	1, // 3: skylr_overseer.v1.Overseer.Deprovision:input_type -> skylr_overseer.v1.DeprovisionRequest
+	5, // 4: skylr_overseer.v1.Overseer.Register:output_type -> google.protobuf.Empty
+	4, // 5: skylr_overseer.v1.Overseer.Lookup:output_type -> skylr_overseer.v1.LookupResponse
+	0, // 6: skylr_overseer.v1.Overseer.Provision:output_type -> skylr_overseer.v1.ProvisionResponse
+	5, // 7: skylr_overseer.v1.Overseer.Deprovision:output_type -> google.protobuf.Empty
+	4, // [4:8] is the sub-list for method output_type
+	0, // [0:4] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -216,7 +318,7 @@ func file_skylr_overseer_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_skylr_overseer_proto_rawDesc), len(file_skylr_overseer_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

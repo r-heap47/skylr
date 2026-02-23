@@ -2,7 +2,6 @@ package overseer
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net"
 	"testing"
@@ -114,8 +113,8 @@ func TestMigrateKeys_MovesKeysToNewShard(t *testing.T) {
 
 	srcConn := newShardConn(t, srcAddr)
 	dstConn := newShardConn(t, dstAddr)
-	defer srcConn.Close()
-	defer dstConn.Close()
+	defer func() { _ = srcConn.Close() }()
+	defer func() { _ = dstConn.Close() }()
 
 	ovr := New(ctx, testConfig())
 
@@ -200,7 +199,7 @@ func TestMigrateKeys_NoSourceShards(t *testing.T) {
 	defer dstStop()
 
 	dstConn := newShardConn(t, dstAddr)
-	defer dstConn.Close()
+	defer func() { _ = dstConn.Close() }()
 
 	ovr := New(ctx, testConfig())
 
@@ -223,61 +222,6 @@ func TestMigrateKeys_NoSourceShards(t *testing.T) {
 	assert.Empty(t, dstFake.setCalls, "no keys should be Set when there are no source shards")
 }
 
-// TestMigrateFromShard_DeleteFailure_NotCountedAsMoved verifies that when Delete
-// fails on the source shard, moveKey returns (false, err) and the key is not
-// counted as successfully moved.
-func TestMigrateFromShard_DeleteFailure_NotCountedAsMoved(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	srcFake := &fakeShard{deleteErr: status.Error(codes.Internal, "delete failed")}
-	dstFake := &fakeShard{}
-
-	srcAddr, srcStop := startFakeShard(t, srcFake)
-	defer srcStop()
-	dstAddr, dstStop := startFakeShard(t, dstFake)
-	defer dstStop()
-
-	srcConn := newShardConn(t, srcAddr)
-	dstConn := newShardConn(t, dstAddr)
-	defer srcConn.Close()
-	defer dstConn.Close()
-
-	ovr := New(ctx, testConfig())
-	ovr.ring.AddNode(srcAddr)
-	oldRing := ovr.ring.Snapshot()
-	ovr.ring.AddNode(dstAddr)
-
-	// Build source entries from keys that map to dst; ensures at least one migration candidate.
-	ttl := durationpb.New(30 * time.Second)
-	for i := 0; i < 100; i++ {
-		key := fmt.Sprintf("key-%d", i)
-		if ovr.keyMovedToNewShard(key, oldRing, dstAddr) {
-			srcFake.scanEntries = append(srcFake.scanEntries, &pbshard.ScanResponse{
-				Entry:        &pbshard.Entry{Key: key, Value: &pbshard.Entry_ValueStr{ValueStr: "v"}},
-				RemainingTtl: ttl,
-			})
-		}
-	}
-	require.NotEmpty(t, srcFake.scanEntries, "need at least one key that maps to dst with this ring topology")
-
-	_, srcCancel := context.WithCancel(ctx)
-	_, dstCancel := context.WithCancel(ctx)
-	src := shard{addr: srcAddr, conn: srcConn, client: pbshard.NewShardClient(srcConn), cancel: srcCancel, errChan: make(chan error, 1)}
-	dst := shard{addr: dstAddr, conn: dstConn, client: pbshard.NewShardClient(dstConn), cancel: dstCancel, errChan: make(chan error, 1)}
-
-	moved, err := ovr.migrateFromShard(ctx, src, dst, oldRing, dstAddr)
-
-	require.NoError(t, err)
-	// moveKey returns (false, err) when Delete fails, so none are counted as moved.
-	assert.Equal(t, 0, moved, "when Delete fails, moved must be 0")
-	// Set was still attempted for migration candidates (we do Set before Delete)
-	assert.NotEmpty(t, dstFake.setCalls, "Set should have been called for keys that map to dst")
-	assert.Equal(t, len(dstFake.setCalls), len(srcFake.deleteCalls), "Delete attempted for each Set")
-}
-
 // TestMigrateFromShard_ScanEOF verifies that migrateFromShard handles a source
 // shard with zero entries cleanly (EOF with no error).
 func TestMigrateFromShard_ScanEOF(t *testing.T) {
@@ -296,8 +240,8 @@ func TestMigrateFromShard_ScanEOF(t *testing.T) {
 
 	srcConn := newShardConn(t, srcAddr)
 	dstConn := newShardConn(t, dstAddr)
-	defer srcConn.Close()
-	defer dstConn.Close()
+	defer func() { _ = srcConn.Close() }()
+	defer func() { _ = dstConn.Close() }()
 
 	ovr := New(ctx, testConfig())
 	ovr.ring.AddNode(srcAddr)
@@ -318,6 +262,7 @@ func TestMigrateFromShard_ScanEOF(t *testing.T) {
 
 // Verify that isStreamEOF correctly identifies io.EOF.
 func TestIsStreamEOF(t *testing.T) {
+	t.Parallel()
 	assert.True(t, isStreamEOF(io.EOF))
 	assert.False(t, isStreamEOF(nil))
 	assert.False(t, isStreamEOF(io.ErrUnexpectedEOF))

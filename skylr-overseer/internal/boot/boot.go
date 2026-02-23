@@ -9,12 +9,15 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	v1 "github.com/r-heap47/skylr/skylr-overseer/internal/api/grpc/v1"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/config"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/overseer"
 	pbovr "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-overseer"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/pkg/utils"
+	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner"
+	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner/provisioners/process"
 	"google.golang.org/grpc"
 )
 
@@ -42,8 +45,40 @@ func Run() error {
 		VirtualNodesPerShard:       utils.Const(cfg.Overseer.VirtualNodesPerShard),
 	})
 
+	var prov provisioner.ShardProvisioner
+	if cfg.Provisioner.Type == "process" {
+		pc := cfg.Provisioner.Process
+		if pc.BinaryPath == "" || pc.ConfigPath == "" || pc.OverseerAddress == "" {
+			return fmt.Errorf("provisioner.process requires binary_path, config_path, overseer_address")
+		}
+		if pc.GRPCPortMin <= 0 || pc.GRPCPortMax <= pc.GRPCPortMin {
+			return fmt.Errorf("provisioner.process requires grpc_port_min < grpc_port_max")
+		}
+		if pc.MaxShards <= 0 {
+			return fmt.Errorf("provisioner.process requires max_shards > 0")
+		}
+		if pc.GRPCHost == "" {
+			pc.GRPCHost = "localhost"
+		}
+		prov = process.New(process.Config{
+			BinaryPath:            pc.BinaryPath,
+			ConfigPath:            pc.ConfigPath,
+			OverseerAddress:       pc.OverseerAddress,
+			GRPCHost:              pc.GRPCHost,
+			GRPCPortMin:           pc.GRPCPortMin,
+			GRPCPortMax:           pc.GRPCPortMax,
+			MaxShards:             pc.MaxShards,
+			RegistrationTimeout:   pc.RegistrationTimeout.Duration,
+			PostRegistrationDelay: pc.PostRegistrationDelay.Duration,
+			ShardCount:            ovr.ShardCount,
+			IsShardRegistered:     ovr.HasShard,
+		})
+		log.Printf("[INFO] process provisioner enabled: binary=%s max_shards=%d", pc.BinaryPath, pc.MaxShards)
+	}
+
 	impl := v1.New(&v1.Config{
-		Ovr: ovr,
+		Ovr:         ovr,
+		Provisioner: prov,
 	})
 
 	// === GRPC SERVER SETUP ===
@@ -76,6 +111,14 @@ func Run() error {
 
 	// cancel root context — stops checkForShardFailures and all observer goroutines
 	cancel()
+
+	// kill all provisioned shard processes (e.g. process provisioner subprocesses)
+	if sh, ok := prov.(provisioner.Shutdowner); ok {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer shutdownCancel()
+
+		_ = sh.Shutdown(shutdownCtx)
+	}
 
 	return nil
 }

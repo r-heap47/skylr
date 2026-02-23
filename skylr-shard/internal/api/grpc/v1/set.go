@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/r-heap47/skylr/skylr-shard/internal/metrics"
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
@@ -24,6 +25,7 @@ func (i *Implementation) Set(ctx context.Context, req *pbshard.SetRequest) (*emp
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("shard.Set: %s", err))
 	}
+	log.Printf("[SET] key = %s", req.Input.Entry.Key)
 
 	return &emptypb.Empty{}, nil
 }

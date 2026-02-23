@@ -1,10 +1,4 @@
-grpc:
-  host: "localhost"
-  port: "5000"
-
 gateway:
-  host: "localhost"
-  port: "5001"
   shutdown_timeout: "5s"
   read_timeout: "0s"
   write_timeout: "0s"
@@ -13,8 +7,5 @@ gateway:
 storage:
   cleanup_timeout: "5s"
   cleanup_cooldown: "5s"
-
-overseer:
-  address: "127.0.0.1:9000"
 
 graceful: true

@@ -26,24 +26,16 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 }
 
 // Config is the top-level application configuration.
+// GRPC host/port, Gateway host/port, Overseer address come from flags, not config.
 type Config struct {
-	GRPC     GRPCConfig     `yaml:"grpc"`
-	Gateway  GatewayConfig  `yaml:"gateway"`
-	Storage  StorageConfig  `yaml:"storage"`
-	Overseer OverseerConfig `yaml:"overseer"`
-	Graceful bool           `yaml:"graceful"`
-}
-
-// GRPCConfig holds the gRPC server host and port.
-type GRPCConfig struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	Gateway  GatewayConfig `yaml:"gateway"`
+	Storage  StorageConfig `yaml:"storage"`
+	Graceful bool          `yaml:"graceful"`
 }
 
 // GatewayConfig holds the HTTP gateway server settings.
+// Host and Port are set via -gateway-host and -gateway-port flags.
 type GatewayConfig struct {
-	Host            string   `yaml:"host"`
-	Port            string   `yaml:"port"`
 	ShutdownTimeout Duration `yaml:"shutdown_timeout"`
 	ReadTimeout     Duration `yaml:"read_timeout"`
 	WriteTimeout    Duration `yaml:"write_timeout"`
@@ -54,11 +46,6 @@ type GatewayConfig struct {
 type StorageConfig struct {
 	CleanupTimeout  Duration `yaml:"cleanup_timeout"`
 	CleanupCooldown Duration `yaml:"cleanup_cooldown"`
-}
-
-// OverseerConfig holds the Overseer gRPC address.
-type OverseerConfig struct {
-	Address string `yaml:"address"`
 }
 
 // Load reads and parses the YAML config file at the given path.

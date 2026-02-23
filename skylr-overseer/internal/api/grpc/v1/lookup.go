@@ -12,7 +12,7 @@ import (
 )
 
 // Lookup returns the shard address responsible for the given key.
-func (i *Implementation) Lookup(ctx context.Context, req *pbovr.LookupRequest) (*pbovr.LookupResponse, error) {
+func (i *Implementation) Lookup(_ context.Context, req *pbovr.LookupRequest) (*pbovr.LookupResponse, error) {
 	if err := validateLookupRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
