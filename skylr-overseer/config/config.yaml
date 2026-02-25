@@ -8,6 +8,7 @@ overseer:
   observer_metrics_timeout: "5s"
   observer_error_threshold: 3
   virtual_nodes_per_shard: 150
+  log_storage_on_metrics: false  # debug: log storage contents on each metrics poll
 
 provisioner:
   type: process

@@ -43,6 +43,7 @@ func Run() error {
 		ObserverMetricsTimeout:     utils.Const(cfg.Overseer.ObserverMetricsTimeout.Duration),
 		ObserverErrorThreshold:     utils.Const(cfg.Overseer.ObserverErrorThreshold),
 		VirtualNodesPerShard:       utils.Const(cfg.Overseer.VirtualNodesPerShard),
+		LogStorageOnMetrics:        utils.Const(cfg.Overseer.LogStorageOnMetrics),
 	})
 
 	var prov provisioner.ShardProvisioner

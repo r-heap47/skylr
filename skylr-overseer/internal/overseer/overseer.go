@@ -29,6 +29,7 @@ type Overseer struct {
 	observerMetricsTimeout     utils.Provider[time.Duration]
 	checkForShardFailuresDelay utils.Provider[time.Duration]
 	observerDelay              utils.Provider[time.Duration]
+	logStorageOnMetrics        utils.Provider[bool]
 }
 
 // shard - Shard data used by Overseer
@@ -51,6 +52,9 @@ type Config struct {
 	// VirtualNodesPerShard is the number of virtual nodes placed on the consistent
 	// hash ring per physical shard. Defaults to 150.
 	VirtualNodesPerShard utils.Provider[int]
+	// LogStorageOnMetrics, when true, logs all storage entries after each metrics
+	// poll (for debug mode, e.g. with process provisioner).
+	LogStorageOnMetrics utils.Provider[bool]
 }
 
 // New creates new Overseer
@@ -71,6 +75,7 @@ func New(ovsCtx context.Context, cfg Config) *Overseer {
 		observerMetricsTimeout:     cfg.ObserverMetricsTimeout,
 		checkForShardFailuresDelay: cfg.CheckForShardFailuresDelay,
 		observerDelay:              cfg.ObserverDelay,
+		logStorageOnMetrics:        cfg.LogStorageOnMetrics,
 	}
 
 	go ovr.checkForShardFailures(ovsCtx)
@@ -108,12 +113,13 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 	obsCtx, obsCancel := context.WithCancel(ovr.ovsCtx)
 
 	obs := &observer{
-		addr:           addr,
-		shardClient:    shardClient,
-		errChan:        shardErrChan,
-		delay:          ovr.observerDelay,
-		metricsTimeout: ovr.observerMetricsTimeout,
-		errorThreshold: ovr.observerErrorThreshold,
+		addr:                addr,
+		shardClient:         shardClient,
+		errChan:             shardErrChan,
+		delay:               ovr.observerDelay,
+		metricsTimeout:      ovr.observerMetricsTimeout,
+		errorThreshold:      ovr.observerErrorThreshold,
+		logStorageOnMetrics: ovr.logStorageOnMetrics,
 	}
 
 	// add shard to the list before starting the observer so that

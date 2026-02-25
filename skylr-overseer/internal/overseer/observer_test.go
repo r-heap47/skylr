@@ -20,12 +20,13 @@ func fastObserver(t *testing.T, client pbshard.ShardClient, errChan chan error, 
 	t.Helper()
 
 	return &observer{
-		addr:           "test-shard:9000",
-		shardClient:    client,
-		errChan:        errChan,
-		delay:          utils.Const(time.Millisecond),
-		metricsTimeout: utils.Const(100 * time.Millisecond),
-		errorThreshold: utils.Const(threshold),
+		addr:                "test-shard:9000",
+		shardClient:         client,
+		errChan:             errChan,
+		delay:               utils.Const(time.Millisecond),
+		metricsTimeout:      utils.Const(100 * time.Millisecond),
+		errorThreshold:      utils.Const(threshold),
+		logStorageOnMetrics: utils.Const(false),
 	}
 }
 
