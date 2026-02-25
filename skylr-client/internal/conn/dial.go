@@ -19,7 +19,8 @@ func NewDialConnector() *DialConnector {
 
 // Connect dials the shard and returns a ShardClient. release() closes the connection.
 func (d *DialConnector) Connect(ctx context.Context, shardAddr string) (pbshard.ShardClient, func(), error) {
-	conn, err := grpc.NewClient(shardAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	//nolint:staticcheck // SA1019: DialContext supports ctx cancellation; NewClient does not
+	conn, err := grpc.DialContext(ctx, shardAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, nil, err
 	}

@@ -21,7 +21,7 @@ type fakeOverseer struct {
 	shardAddr string
 }
 
-func (f *fakeOverseer) Lookup(_ context.Context, req *pbovr.LookupRequest) (*pbovr.LookupResponse, error) {
+func (f *fakeOverseer) Lookup(_ context.Context, _ *pbovr.LookupRequest) (*pbovr.LookupResponse, error) {
 	return &pbovr.LookupResponse{ShardAddress: f.shardAddr}, nil
 }
 
@@ -100,7 +100,7 @@ func TestClient_GetSetDelete(t *testing.T) {
 	ctx := context.Background()
 	c, err := New(ctx, ovrAddr, Config{Timeout: 5 * time.Second})
 	require.NoError(t, err)
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	// Set
 	err = c.Set(ctx, "k1", "v1", time.Minute)
@@ -133,7 +133,7 @@ func TestClient_Set_ValueTypes(t *testing.T) {
 	ctx := context.Background()
 	c, err := New(ctx, ovrAddr, Config{Timeout: 5 * time.Second})
 	require.NoError(t, err)
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	tests := []struct {
 		key   string
@@ -160,7 +160,7 @@ func TestClient_Set_UnsupportedValueType(t *testing.T) {
 	ctx := context.Background()
 	c, err := New(ctx, ovrAddr, Config{Timeout: 5 * time.Second})
 	require.NoError(t, err)
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	err = c.Set(ctx, "k", []byte("bad"), time.Minute)
 	require.Error(t, err)

@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/r-heap47/skylr/skylr-client"
-	pbshard "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-shard"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	client "github.com/r-heap47/skylr/skylr-client"
+	pbshard "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-shard"
 )
 
 func TestFormatEntryValue(t *testing.T) {
@@ -28,7 +29,9 @@ func TestFormatEntryValue(t *testing.T) {
 		{"float64", &pbshard.Entry{Key: "k", Value: &pbshard.Entry_ValueDouble{ValueDouble: 2.5}}, "2.5"},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := formatEntryValue(tt.entry)
 			assert.Equal(t, tt.want, got)
 		})
@@ -41,7 +44,7 @@ func TestRunGet_MissingArgs(t *testing.T) {
 	ctx := context.Background()
 	c, err := client.New(ctx, "localhost:1")
 	require.NoError(t, err)
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	err = runGet(ctx, c, []string{}, false)
 	require.Error(t, err)
@@ -54,7 +57,7 @@ func TestRunSet_MissingArgs(t *testing.T) {
 	ctx := context.Background()
 	c, err := client.New(ctx, "localhost:1")
 	require.NoError(t, err)
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	err = runSet(ctx, c, []string{"key"}, time.Minute, false)
 	require.Error(t, err)
@@ -67,7 +70,7 @@ func TestRunDelete_MissingArgs(t *testing.T) {
 	ctx := context.Background()
 	c, err := client.New(ctx, "localhost:1")
 	require.NoError(t, err)
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	err = runDelete(ctx, c, []string{}, false)
 	require.Error(t, err)

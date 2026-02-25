@@ -6,10 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/r-heap47/skylr/skylr-client"
-	pbshard "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-shard"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	client "github.com/r-heap47/skylr/skylr-client"
+	pbshard "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-shard"
 )
 
 func runGet(ctx context.Context, c *client.Client, args []string, verbose bool) error {

@@ -29,7 +29,8 @@ type Config struct {
 
 // New creates a new Client.
 func New(ctx context.Context, overseerAddr string, cfg Config) (*Client, error) {
-	ovrConn, err := grpc.NewClient(overseerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	//nolint:staticcheck // SA1019: DialContext supports ctx cancellation; NewClient does not
+	ovrConn, err := grpc.DialContext(ctx, overseerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("connect to overseer: %w", err)
 	}

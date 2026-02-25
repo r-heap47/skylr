@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/r-heap47/skylr/skylr-client"
+	client "github.com/r-heap47/skylr/skylr-client"
 )
 
 const usage = `usage: skylr-client [-overseer=addr] [-ttl=duration] [-v] get|set|delete [key] [value]
@@ -40,7 +40,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	if err := runCommand(ctx, c, cmd, args, *ttl, *verbose); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
