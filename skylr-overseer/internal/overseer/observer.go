@@ -2,7 +2,10 @@ package overseer
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"log"
+	"strings"
 	"time"
 
 	pbshard "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-shard"
@@ -16,9 +19,10 @@ type observer struct {
 	shardClient pbshard.ShardClient
 	errChan     chan<- error
 
-	delay          utils.Provider[time.Duration]
-	metricsTimeout utils.Provider[time.Duration]
-	errorThreshold utils.Provider[int]
+	delay               utils.Provider[time.Duration]
+	metricsTimeout      utils.Provider[time.Duration]
+	errorThreshold      utils.Provider[int]
+	logStorageOnMetrics utils.Provider[bool]
 }
 
 // observe monitors a single shard until ctx is cancelled.
@@ -42,7 +46,7 @@ func (obs *observer) observe(ctx context.Context) {
 		}
 
 		// collect metrics with a bounded timeout so a hung shard never blocks the loop
-		_, err := func() (*pbshard.MetricsResponse, error) {
+		resp, err := func() (*pbshard.MetricsResponse, error) {
 			rpcCtx, cancel := context.WithTimeout(ctx, obs.metricsTimeout(ctx))
 			defer cancel()
 
@@ -66,5 +70,69 @@ func (obs *observer) observe(ctx context.Context) {
 
 		// successful poll resets the error streak
 		consecutiveErrors = 0
+
+		obs.logMetrics(resp)
+		if obs.logStorageOnMetrics(ctx) {
+			obs.logStorage(ctx)
+		}
 	}
+}
+
+// logMetrics logs the shard's metrics response.
+func (obs *observer) logMetrics(resp *pbshard.MetricsResponse) {
+	log.Printf("[INFO] shard %s metrics: cpu=%.2f%% rss=%d heap=%d gets=%d sets=%d deletes=%d uptime=%ds",
+		obs.addr, resp.CpuUsage, resp.MemoryRssBytes, resp.MemoryHeapAllocBytes,
+		resp.TotalGets, resp.TotalSets, resp.TotalDeletes, resp.UptimeSeconds)
+}
+
+// logStorage scans the shard's storage and logs all entries in one message.
+func (obs *observer) logStorage(ctx context.Context) {
+	rpcCtx, cancel := context.WithTimeout(ctx, obs.metricsTimeout(ctx))
+	defer cancel()
+
+	stream, err := obs.shardClient.Scan(rpcCtx, &emptypb.Empty{})
+	if err != nil {
+		log.Printf("[DEBUG] shard %s: scan failed: %s", obs.addr, err)
+		return
+	}
+
+	var parts []string
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+
+		resp, err := stream.Recv()
+		if err != nil {
+			if err != io.EOF {
+				log.Printf("[DEBUG] shard %s: scan recv error: %s", obs.addr, err)
+			}
+			break
+		}
+
+		if resp.Entry != nil {
+			parts = append(parts, formatEntry(resp.Entry))
+		}
+	}
+
+	log.Printf("[DEBUG] shard %s storage (%d entries): %s", obs.addr, len(parts), strings.Join(parts, " "))
+}
+
+func formatEntry(e *pbshard.Entry) string {
+	var v string
+	switch e.Value.(type) {
+	case *pbshard.Entry_ValueStr:
+		v = fmt.Sprintf("%q", e.GetValueStr())
+	case *pbshard.Entry_ValueInt32:
+		v = fmt.Sprintf("%d", e.GetValueInt32())
+	case *pbshard.Entry_ValueInt64:
+		v = fmt.Sprintf("%d", e.GetValueInt64())
+	case *pbshard.Entry_ValueFloat:
+		v = fmt.Sprintf("%g", e.GetValueFloat())
+	case *pbshard.Entry_ValueDouble:
+		v = fmt.Sprintf("%g", e.GetValueDouble())
+	default:
+		v = "?"
+	}
+	return fmt.Sprintf("%s=%s", e.Key, v)
 }

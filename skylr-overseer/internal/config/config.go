@@ -67,6 +67,9 @@ type OverseerConfig struct {
 	// hash ring per physical shard. Higher values improve key distribution at the
 	// cost of more memory. Defaults to 150 when not set.
 	VirtualNodesPerShard int `yaml:"virtual_nodes_per_shard"`
+	// LogStorageOnMetrics enables debug logging of all storage entries after each
+	// metrics poll. Useful for local development and debugging.
+	LogStorageOnMetrics bool `yaml:"log_storage_on_metrics"`
 }
 
 // Load reads and parses the YAML config file at the given path.
