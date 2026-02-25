@@ -24,11 +24,12 @@ linters:
       - linters:
           - revive
         text: "don't use an underscore in package name"
-  settings:
-    goimports:
-      local-prefixes: github.com/r-heap47/skylr/skylr-client
 
 formatters:
   enable:
     - goimports
     - gofmt
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/r-heap47/skylr/skylr-client

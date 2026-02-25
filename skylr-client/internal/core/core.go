@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/r-heap47/skylr/skylr-client/internal/conn"
-	pbovr "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-overseer"
-	pbshard "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-shard"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/durationpb"
+
+	"github.com/r-heap47/skylr/skylr-client/internal/conn"
+	pbovr "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-overseer"
+	pbshard "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-shard"
 )
 
 // Client implements the skylr storage client.

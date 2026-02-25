@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
-	pbovr "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-overseer"
-	pbshard "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-shard"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	pbovr "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-overseer"
+	pbshard "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-shard"
 )
 
 // fakeOverseer implements Overseer server. Lookup returns a fixed shard address.

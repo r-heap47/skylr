@@ -3,9 +3,10 @@ package conn
 import (
 	"context"
 
-	pbshard "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-shard"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	pbshard "github.com/r-heap47/skylr/skylr-client/internal/pb/skylr-shard"
 )
 
 // DialConnector creates a new gRPC connection to the shard for each Connect call.
