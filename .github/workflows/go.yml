@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dir: [skylr-shard, skylr-overseer]
+        dir: [skylr-shard, skylr-overseer, skylr-client]
 
     steps:
       - uses: actions/checkout@v4
