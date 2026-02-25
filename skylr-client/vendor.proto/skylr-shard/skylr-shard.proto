@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package skylr_shard.v1;
+
+option go_package = "./skylr-shard;pbshard";
+
+import "google/protobuf/duration.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+// Shard - gprc shard service
+service Shard {
+    // === STORAGE ===
+
+    // Get returns Entry by provided key
+    rpc Get(GetRequest) returns (GetResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/get"
+        };
+    }
+    // Set uploads new entry to storage
+    rpc Set(SetRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/api/v1/set"
+            body: "*"
+        };
+    }
+    // Delete removes entry by provided key
+    rpc Delete(DeleteRequest) returns (DeleteResponse) {
+        option (google.api.http) = {
+            delete: "/api/v1/delete"
+        };
+    }
+
+    // === METRICS ===
+
+    // Metrics returns current service metrics
+    rpc Metrics(google.protobuf.Empty) returns (MetricsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/metrics"
+        };
+    }
+
+    // === MIGRATION ===
+
+    // Scan streams all non-expired entries from the shard's storage.
+    // Used by the Overseer for key migration when a new shard is added.
+    rpc Scan(google.protobuf.Empty) returns (stream ScanResponse);
+}
+
+// GetRequest - get request params
+message GetRequest {
+    string key = 1;
+}
+
+// GetResponse - get request response
+message GetResponse {
+    Entry entry = 1;
+}
+
+// SetRequest - set request params
+message SetRequest {
+    InputEntry input = 1;
+}
+
+// SetResponse - set request response
+message SetResponse {
+}
+
+// DeleteRequest - delete request params
+message DeleteRequest {
+    string key = 1;
+}
+
+// DeleteResponse - delete response
+message DeleteResponse {
+    // deleted indicates whether the key existed and was deleted
+    // true - key existed and was deleted
+    // false - key did not exist (no-op)
+    bool deleted = 1;
+}
+
+// Entry - storage entry
+message Entry {
+    // key
+    string key = 1;
+     // value
+    oneof value {
+        // str value
+        string value_str = 2;
+        // int32 value
+        int32 value_int32 = 3;
+        // int64 value
+        int64 value_int64 = 4;
+        // float32 value
+        float value_float = 5;
+        // float64 value
+        double value_double = 6;
+    }
+}
+
+// InputEntry - input storage entry
+message InputEntry {
+    // entry
+    Entry entry = 1;
+    // ttl
+    google.protobuf.Duration ttl = 2;
+}
+
+// ScanResponse - a single entry streamed during Scan
+message ScanResponse {
+    // entry is the stored key-value pair
+    Entry entry = 1;
+    // remaining_ttl is the remaining time-to-live for this entry
+    google.protobuf.Duration remaining_ttl = 2;
+}
+
+// MetricsResponse - service metrics snapshot
+message MetricsResponse {
+    // system
+    double cpu_usage = 1;
+    uint64 memory_rss_bytes = 2;          // process RSS (what OS/OOM killer sees)
+    uint64 memory_heap_alloc_bytes = 3;   // Go heap live objects (diagnostics)
+    // throughput (cumulative counters, Overseer computes rates)
+    uint64 total_gets = 4;
+    uint64 total_sets = 5;
+    uint64 total_deletes = 6;
+    // uptime
+    int64 uptime_seconds = 7;
+}

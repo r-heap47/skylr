@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package skylr_overseer.v1;
+
+option go_package = "./skylr-overseer;pbovr";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+// Overseer - grpc overseer service
+service Overseer {
+    // Register registers a new shard in the system
+    rpc Register(RegisterRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/api/v1/register"
+        };
+    }
+
+    // Lookup returns the address of the shard responsible for the given key
+    rpc Lookup(LookupRequest) returns (LookupResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/lookup"
+        };
+    }
+
+    // Provision creates a new shard via the provisioner and returns its address when registered.
+    rpc Provision(google.protobuf.Empty) returns (ProvisionResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/provision"
+        };
+    }
+
+    // Deprovision removes the shard at the given address from the ring and stops it.
+    rpc Deprovision(DeprovisionRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/api/v1/deprovision"
+            body: "*"
+        };
+    }
+}
+
+// ProvisionResponse - provision response
+message ProvisionResponse {
+    string address = 1;
+}
+
+// DeprovisionRequest - deprovision request params
+message DeprovisionRequest {
+    string address = 1;
+}
+
+// RegisterRequest - register request params
+message RegisterRequest {
+   string address = 1;
+}
+
+// LookupRequest - lookup request params
+message LookupRequest {
+    string key = 1;
+}
+
+// LookupResponse - lookup response
+message LookupResponse {
+    // shard_address is the gRPC address of the shard responsible for the key
+    string shard_address = 1;
+}
