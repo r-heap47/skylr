@@ -1,3 +1,6 @@
+api:
+  log_set_delete: false   # false = disable Set/Delete logs (for load tests)
+
 gateway:
   shutdown_timeout: "5s"
   read_timeout: "0s"

@@ -25,7 +25,9 @@ func (i *Implementation) Set(ctx context.Context, req *pbshard.SetRequest) (*emp
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("shard.Set: %s", err))
 	}
-	log.Printf("[SET] key = %s", req.Input.Entry.Key)
+	if i.logSetDelete(ctx) {
+		log.Printf("[SET] key = %s", req.Input.Entry.Key)
+	}
 
 	return &emptypb.Empty{}, nil
 }
