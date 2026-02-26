@@ -30,7 +30,23 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 type Config struct {
 	Gateway  GatewayConfig `yaml:"gateway"`
 	Storage  StorageConfig `yaml:"storage"`
+	API      APIConfig     `yaml:"api"`
 	Graceful bool          `yaml:"graceful"`
+}
+
+// APIConfig holds API/server logging options.
+type APIConfig struct {
+	// LogSetDelete enables per-request logging for Set and Delete. Nil/omit = true (default). Set false for load tests.
+	LogSetDelete *bool `yaml:"log_set_delete"`
+}
+
+// LogSetDeleteEnabled returns true if Set/Delete logging is enabled (default when unset).
+func (a APIConfig) LogSetDeleteEnabled() bool {
+	if a.LogSetDelete == nil {
+		return true
+	}
+
+	return *a.LogSetDelete
 }
 
 // GatewayConfig holds the HTTP gateway server settings.

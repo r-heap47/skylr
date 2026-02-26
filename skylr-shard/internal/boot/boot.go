@@ -19,6 +19,7 @@ import (
 	"github.com/r-heap47/skylr/skylr-shard/internal/metrics"
 	pbovr "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-overseer"
 	pbshard "github.com/r-heap47/skylr/skylr-shard/internal/pb/skylr-shard"
+	"github.com/r-heap47/skylr/skylr-shard/internal/pkg/utils"
 	"github.com/r-heap47/skylr/skylr-shard/internal/shard"
 	"github.com/r-heap47/skylr/skylr-shard/internal/storage/storages/noeviction"
 	"google.golang.org/grpc"
@@ -89,8 +90,9 @@ func Run() error {
 	collector := metrics.NewCollector(time.Now())
 
 	impl := grpcV1.New(grpcV1.Config{
-		Shard:     shardSvc,
-		Collector: collector,
+		Shard:        shardSvc,
+		Collector:    collector,
+		LogSetDelete: utils.Const(cfg.API.LogSetDeleteEnabled()),
 	})
 
 	// === GRPC SERVER SETUP ===

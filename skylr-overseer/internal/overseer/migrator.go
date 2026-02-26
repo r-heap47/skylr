@@ -60,6 +60,9 @@ func (ovr *Overseer) migrateKeys(ctx context.Context, snap *hashring.HashRing, n
 }
 
 // migrateFromShard scans src and moves any key that now belongs to newAddr.
+// Phase 1: collect entries during Scan (no Delete on src — avoids deadlock where
+// Scan holds RLock and Delete needs Lock). Phase 2: after Scan completes, move
+// each collected entry (Set on dst, Delete on src).
 func (ovr *Overseer) migrateFromShard(
 	ctx context.Context,
 	src shard,
@@ -72,25 +75,36 @@ func (ovr *Overseer) migrateFromShard(
 		return 0, err
 	}
 
-	moved := 0
+	// Phase 1: collect entries that belong to newAddr; do NOT call moveKey yet
+	// (moveKey does src.Delete, which would deadlock while Scan holds RLock).
+	var toMove []*pbshard.ScanResponse
 	for {
 		if ctx.Err() != nil {
-			return moved, ctx.Err()
+			return 0, ctx.Err()
 		}
 
 		resp, err := stream.Recv()
 		if err != nil {
 			if isStreamEOF(err) {
-				return moved, nil
+				break
 			}
-			return moved, err
+			return 0, err
 		}
 
 		key := resp.Entry.Key
-		if !ovr.keyMovedToNewShard(key, snap, newAddr) {
-			continue
+		if ovr.keyMovedToNewShard(key, snap, newAddr) {
+			toMove = append(toMove, resp)
+		}
+	}
+
+	// Phase 2: Scan completed, RLock released; now move each entry.
+	moved := 0
+	for _, resp := range toMove {
+		if ctx.Err() != nil {
+			return moved, ctx.Err()
 		}
 
+		key := resp.Entry.Key
 		ok, err := ovr.moveKey(ctx, src, dst, resp)
 		if err != nil {
 			log.Printf("[WARN] migration: failed to move key %q from %s to %s: %s", key, src.addr, dst.addr, err)
@@ -100,6 +114,8 @@ func (ovr *Overseer) migrateFromShard(
 			moved++
 		}
 	}
+
+	return moved, nil
 }
 
 // keyMovedToNewShard reports whether key has been reassigned to newAddr by the

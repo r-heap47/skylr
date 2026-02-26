@@ -149,19 +149,41 @@ func (s *noeviction) Clean(ctx context.Context, now time.Time) error {
 
 func (s *noeviction) Scan(ctx context.Context) iter.Seq2[*storage.Entry, error] {
 	return func(yield func(*storage.Entry, error) bool) {
-		s.mu.RLock()
-		defer s.mu.RUnlock()
+		// Collect non-expired entries under RLock (short hold). Then yield from
+		// the copy without the lock, so cleanup and other ops are not blocked.
+		var (
+			entries []storage.Entry
+			ctxErr  error
+		)
 
-		now := s.curTime(ctx)
-		for _, entry := range s.store {
+		func() {
+			s.mu.RLock()
+			defer s.mu.RUnlock()
+
+			now := s.curTime(ctx)
+			for _, entry := range s.store {
+				if err := utils.CtxDone(ctx); err != nil {
+					ctxErr = err
+					return
+				}
+				if now.After(entry.Exp) {
+					continue
+				}
+				entries = append(entries, entry)
+			}
+		}()
+
+		if ctxErr != nil {
+			yield(nil, ctxErr)
+			return
+		}
+
+		for i := range entries {
 			if err := utils.CtxDone(ctx); err != nil {
 				yield(nil, err)
 				return
 			}
-			if now.After(entry.Exp) {
-				continue
-			}
-			if !yield(&entry, nil) {
+			if !yield(&entries[i], nil) {
 				return
 			}
 		}

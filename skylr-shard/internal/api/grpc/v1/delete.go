@@ -24,7 +24,7 @@ func (i *Implementation) Delete(ctx context.Context, req *pbshard.DeleteRequest)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("shard.Delete: %s", err))
 	}
-	if deleted {
+	if i.logSetDelete(ctx) && deleted {
 		log.Printf("[DELETE] key = %s", req.Key)
 	}
 

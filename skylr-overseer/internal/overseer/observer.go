@@ -80,8 +80,10 @@ func (obs *observer) observe(ctx context.Context) {
 
 // logMetrics logs the shard's metrics response.
 func (obs *observer) logMetrics(resp *pbshard.MetricsResponse) {
-	log.Printf("[INFO] shard %s metrics: cpu=%.2f%% rss=%d heap=%d gets=%d sets=%d deletes=%d uptime=%ds",
-		obs.addr, resp.CpuUsage, resp.MemoryRssBytes, resp.MemoryHeapAllocBytes,
+	rssMB := float64(resp.MemoryRssBytes) / (1024 * 1024)
+	heapMB := float64(resp.MemoryHeapAllocBytes) / (1024 * 1024)
+	log.Printf("[INFO] shard %s metrics: cpu=%.2f%% rss=%.2f MB heap=%.2f MB gets=%d sets=%d deletes=%d uptime=%ds",
+		obs.addr, resp.CpuUsage, rssMB, heapMB,
 		resp.TotalGets, resp.TotalSets, resp.TotalDeletes, resp.UptimeSeconds)
 }
 

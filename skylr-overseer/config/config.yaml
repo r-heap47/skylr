@@ -19,6 +19,6 @@ provisioner:
     grpc_host: "localhost"
     grpc_port_min: 5000
     grpc_port_max: 5999
-    max_shards: 5
+    max_shards: 10
     registration_timeout: "5s"
-    post_registration_delay: "3s"
+    post_registration_delay: "1s"   # was 3s; set >0 only if shard needs extra warmup before observer
