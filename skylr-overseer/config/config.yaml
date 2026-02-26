@@ -20,5 +20,6 @@ provisioner:
     grpc_port_min: 5000
     grpc_port_max: 5999
     max_shards: 10
+    initial_shards: 3  # number of shards to provision on boot; 0 = none
     registration_timeout: "5s"
     post_registration_delay: "1s"   # was 3s; set >0 only if shard needs extra warmup before observer

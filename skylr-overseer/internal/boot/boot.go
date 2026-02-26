@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	v1 "github.com/r-heap47/skylr/skylr-overseer/internal/api/grpc/v1"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/config"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/overseer"
@@ -58,6 +60,9 @@ func Run() error {
 		if pc.MaxShards <= 0 {
 			return fmt.Errorf("provisioner.process requires max_shards > 0")
 		}
+		if pc.InitialShards < 0 || pc.InitialShards > pc.MaxShards {
+			return fmt.Errorf("provisioner.process requires 0 <= initial_shards <= max_shards, got initial_shards=%d max_shards=%d", pc.InitialShards, pc.MaxShards)
+		}
 		if pc.GRPCHost == "" {
 			pc.GRPCHost = "localhost"
 		}
@@ -92,13 +97,35 @@ func Run() error {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
 
+	serveReady := make(chan struct{})
 	go func() {
+		close(serveReady)
 		log.Printf("[GRPC] grpc server is set up on %s\n", grpcEndpoint)
 
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("grpcServer.Serve: %s", err)
 		}
 	}()
+
+	// === INITIAL SHARDS (after gRPC is listening so shards can register) ===
+
+	if prov != nil && cfg.Provisioner.Type == "process" && cfg.Provisioner.Process.InitialShards > 0 {
+		<-serveReady
+		pc := cfg.Provisioner.Process
+
+		g, gCtx := errgroup.WithContext(ctx)
+		for i := 0; i < pc.InitialShards; i++ {
+			g.Go(func() error {
+				_, err := prov.Provision(gCtx)
+				return err
+			})
+		}
+
+		if err := g.Wait(); err != nil {
+			return fmt.Errorf("initial shard provisioning: %w", err)
+		}
+		log.Printf("[INFO] provisioned %d initial shards", pc.InitialShards)
+	}
 
 	// === GRACEFUL SHUTDOWN ===
 
