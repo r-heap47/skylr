@@ -47,6 +47,7 @@ type ProcessProvisionerCfg struct {
 	GRPCPortMin           int      `yaml:"grpc_port_min"`
 	GRPCPortMax           int      `yaml:"grpc_port_max"`
 	MaxShards             int      `yaml:"max_shards"`
+	InitialShards         int      `yaml:"initial_shards"` // number of shards to provision on boot; 0 = none
 	RegistrationTimeout   Duration `yaml:"registration_timeout"`
 	PostRegistrationDelay Duration `yaml:"post_registration_delay"`
 }
