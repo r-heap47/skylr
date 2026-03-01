@@ -50,6 +50,47 @@ func waitDone(t *testing.T, done <-chan struct{}, timeout time.Duration, msg str
 	}
 }
 
+// TestObserve_LastMetrics_NilBeforeFirstPoll verifies that LastMetrics returns
+// nil before the observer has completed its first successful poll.
+func TestObserve_LastMetrics_NilBeforeFirstPoll(t *testing.T) {
+	t.Parallel()
+
+	obs := &observer{addr: "test-shard:9000"}
+	assert.Nil(t, obs.LastMetrics(), "LastMetrics should be nil before any poll")
+}
+
+// TestObserve_LastMetricsCached verifies that after a successful poll the
+// metrics snapshot is accessible via LastMetrics.
+func TestObserve_LastMetricsCached(t *testing.T) {
+	t.Parallel()
+
+	mc := minimock.NewController(t)
+
+	want := &pbshard.MetricsResponse{ItemCount: 42, CpuUsage: 1.5}
+	errChan := make(chan error, 1)
+	shardMock := mocks.NewShardClientMock(mc).
+		MetricsMock.Set(func(_ context.Context, _ *empty.Empty, _ ...grpc.CallOption) (*pbshard.MetricsResponse, error) {
+		return want, nil
+	})
+
+	obs := fastObserver(t, shardMock, errChan, 3)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go obs.observe(ctx)
+
+	assert.Eventually(t,
+		func() bool {
+			m := obs.LastMetrics()
+			return m != nil && m.ItemCount == want.ItemCount
+		},
+		time.Second,
+		5*time.Millisecond,
+		"LastMetrics should reflect the latest successful poll",
+	)
+}
+
 // TestObserve_CtxCancelStopsLoop verifies that observe returns promptly when
 // its context is cancelled without signalling errChan.
 func TestObserve_CtxCancelStopsLoop(t *testing.T) {

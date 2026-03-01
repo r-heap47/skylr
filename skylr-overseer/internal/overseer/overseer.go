@@ -39,6 +39,7 @@ type shard struct {
 	client  pbshard.ShardClient
 	cancel  context.CancelFunc // stops the observer goroutine
 	errChan <-chan error
+	obs     *observer
 }
 
 // Config - Overseer config
@@ -130,6 +131,7 @@ func (ovr *Overseer) Register(ctx context.Context, addr string) error {
 		client:  shardClient,
 		cancel:  obsCancel,
 		errChan: shardErrChan,
+		obs:     obs,
 	})
 
 	go obs.observe(obsCtx)

@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	pbshard "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-shard"
@@ -23,6 +24,16 @@ type observer struct {
 	metricsTimeout      utils.Provider[time.Duration]
 	errorThreshold      utils.Provider[int]
 	logStorageOnMetrics utils.Provider[bool]
+
+	// lastMetrics holds the most recent successful MetricsResponse from the shard.
+	// Written by the observe goroutine, read by the autoscaler without additional locking.
+	lastMetrics atomic.Pointer[pbshard.MetricsResponse]
+}
+
+// LastMetrics returns the most recent metrics snapshot, or nil if none has been
+// collected yet.
+func (obs *observer) LastMetrics() *pbshard.MetricsResponse {
+	return obs.lastMetrics.Load()
 }
 
 // observe monitors a single shard until ctx is cancelled.
@@ -71,6 +82,9 @@ func (obs *observer) observe(ctx context.Context) {
 		// successful poll resets the error streak
 		consecutiveErrors = 0
 
+		// caching metrics
+		obs.lastMetrics.Store(resp)
+
 		obs.logMetrics(resp)
 		if obs.logStorageOnMetrics(ctx) {
 			obs.logStorage(ctx)
@@ -82,9 +96,9 @@ func (obs *observer) observe(ctx context.Context) {
 func (obs *observer) logMetrics(resp *pbshard.MetricsResponse) {
 	rssMB := float64(resp.MemoryRssBytes) / (1024 * 1024)
 	heapMB := float64(resp.MemoryHeapAllocBytes) / (1024 * 1024)
-	log.Printf("[INFO] shard %s metrics: cpu=%.2f%% rss=%.2f MB heap=%.2f MB gets=%d sets=%d deletes=%d uptime=%ds",
+	log.Printf("[INFO] shard %s metrics: cpu=%.2f%% rss=%.2f MB heap=%.2f MB items=%d gets=%d sets=%d deletes=%d uptime=%ds",
 		obs.addr, resp.CpuUsage, rssMB, heapMB,
-		resp.TotalGets, resp.TotalSets, resp.TotalDeletes, resp.UptimeSeconds)
+		resp.ItemCount, resp.TotalGets, resp.TotalSets, resp.TotalDeletes, resp.UptimeSeconds)
 }
 
 // logStorage scans the shard's storage and logs all entries in one message.

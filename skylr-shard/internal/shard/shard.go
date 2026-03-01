@@ -96,6 +96,11 @@ func (sh *Shard) Delete(ctx context.Context, k string) (bool, error) {
 	return sh.storage.Delete(ctx, k)
 }
 
+// Len returns the number of entries currently held by the shard's storage.
+func (sh *Shard) Len(ctx context.Context) (int, error) {
+	return sh.storage.Len(ctx)
+}
+
 // ScanEntry is a single entry produced by Scan, carrying the protobuf entry
 // and the remaining TTL at the time the scan was taken.
 type ScanEntry struct {

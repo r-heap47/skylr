@@ -199,6 +199,74 @@ func TestGet(t *testing.T) {
 	})
 }
 
+func TestLen(t *testing.T) {
+	t.Parallel()
+
+	newStore := func() storage.Storage {
+		return New(Config{
+			CurTime:         utils.Const(time.Now()),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           make(chan struct{}),
+		})
+	}
+
+	t.Run("empty store returns 0", func(t *testing.T) {
+		t.Parallel()
+
+		n, err := newStore().Len(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, 0, n)
+	})
+
+	t.Run("returns count after sets", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := t.Context()
+		now := testutils.MustParseDate(t, "2025-01-01")
+		store := New(Config{
+			CurTime:         utils.Const(now),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           make(chan struct{}),
+		})
+
+		for _, k := range []string{"a", "b", "c"} {
+			_, err := store.Set(ctx, storage.Entry{K: k, V: "v", Exp: now.Add(time.Hour)})
+			require.NoError(t, err)
+		}
+
+		n, err := store.Len(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 3, n)
+	})
+
+	t.Run("decreases after delete", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := t.Context()
+		now := testutils.MustParseDate(t, "2025-01-01")
+		store := New(Config{
+			CurTime:         utils.Const(now),
+			CleanupTimeout:  utils.Const(5 * time.Second),
+			CleanupCooldown: utils.Const(5 * time.Second),
+			Start:           make(chan struct{}),
+		})
+
+		_, err := store.Set(ctx, storage.Entry{K: "x", V: "v", Exp: now.Add(time.Hour)})
+		require.NoError(t, err)
+		_, err = store.Set(ctx, storage.Entry{K: "y", V: "v", Exp: now.Add(time.Hour)})
+		require.NoError(t, err)
+
+		_, err = store.Delete(ctx, "x")
+		require.NoError(t, err)
+
+		n, err := store.Len(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 1, n)
+	})
+}
+
 func TestDelete(t *testing.T) {
 	t.Parallel()
 

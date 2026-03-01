@@ -267,6 +267,12 @@
           "type": "string",
           "format": "int64",
           "title": "uptime"
+        },
+        "itemCount": {
+          "type": "string",
+          "format": "uint64",
+          "description": "number of entries currently in storage",
+          "title": "storage"
         }
       },
       "title": "MetricsResponse - service metrics snapshot"

@@ -30,6 +30,7 @@ type Config struct {
 	GRPC        GRPCConfig        `yaml:"grpc"`
 	Overseer    OverseerConfig    `yaml:"overseer"`
 	Provisioner ProvisionerConfig `yaml:"provisioner"`
+	Autoscaler  AutoscalerConfig  `yaml:"autoscaler"`
 }
 
 // ProvisionerConfig holds provisioner settings. When type is empty, provisioning is disabled.
@@ -50,6 +51,28 @@ type ProcessProvisionerCfg struct {
 	InitialShards         int      `yaml:"initial_shards"` // number of shards to provision on boot; 0 = none
 	RegistrationTimeout   Duration `yaml:"registration_timeout"`
 	PostRegistrationDelay Duration `yaml:"post_registration_delay"`
+}
+
+// AutoscalerConfig holds settings for the autoscaler.
+type AutoscalerConfig struct {
+	Enabled      bool     `yaml:"enabled"`
+	EvalInterval Duration `yaml:"eval_interval"`
+	Cooldown     Duration `yaml:"cooldown"`
+	// SustainedFor is the number of consecutive evaluation ticks a rule must
+	// fire before a scale-up is triggered.
+	SustainedFor int                   `yaml:"sustained_for"`
+	Rules        AutoscalerRulesConfig `yaml:"rules"`
+}
+
+// AutoscalerRulesConfig holds per-rule configuration.
+type AutoscalerRulesConfig struct {
+	ItemCount ItemCountRuleConfig `yaml:"item_count"`
+}
+
+// ItemCountRuleConfig configures the ItemCountRule.
+type ItemCountRuleConfig struct {
+	Enabled   bool   `yaml:"enabled"`
+	Threshold uint64 `yaml:"threshold"`
 }
 
 // GRPCConfig holds the gRPC server host and port.

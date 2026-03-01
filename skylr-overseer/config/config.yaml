@@ -19,7 +19,18 @@ provisioner:
     grpc_host: "localhost"
     grpc_port_min: 5000
     grpc_port_max: 5999
-    max_shards: 10
-    initial_shards: 3  # number of shards to provision on boot; 0 = none
+    max_shards: 5
+    initial_shards: 1  # number of shards to provision on boot; 0 = none
     registration_timeout: "5s"
     post_registration_delay: "1s"   # was 3s; set >0 only if shard needs extra warmup before observer
+
+autoscaler:
+  enabled: true
+  eval_interval: "1s"    # matches observer_delay so each tick uses a fresh snapshot
+  cooldown: "5s"         # pause after scale-up while migrateKeys redistributes keys
+  sustained_for: 3       # rule must fire this many consecutive ticks before scale-up
+  rules:
+    item_count:
+      enabled: true
+      # items/shard average (TotalItems / ShardCount)
+      threshold: 100    
