@@ -56,6 +56,6 @@ func (i *Implementation) Metrics(ctx context.Context, _ *emptypb.Empty) (*pbshar
 		TotalSets:            metrics.TotalSets(),
 		TotalDeletes:         metrics.TotalDeletes(),
 		UptimeSeconds:        i.collector.Uptime(),
-		ItemCount:            uint64(itemCount),
+		ItemCount:            uint64(itemCount), // nolint: gosec
 	}, nil
 }
