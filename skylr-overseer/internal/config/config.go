@@ -60,7 +60,7 @@ type AutoscalerConfig struct {
 	Cooldown     Duration `yaml:"cooldown"`
 	// SustainedFor is the number of consecutive evaluation ticks a rule must
 	// fire before a scale-up is triggered.
-	SustainedFor int                  `yaml:"sustained_for"`
+	SustainedFor int                   `yaml:"sustained_for"`
 	Rules        AutoscalerRulesConfig `yaml:"rules"`
 }
 

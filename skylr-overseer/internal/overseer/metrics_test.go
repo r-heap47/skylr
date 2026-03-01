@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	pbshard "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-shard"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/autoscaler"
+	pbshard "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-shard"
 	"github.com/stretchr/testify/assert"
 )
 

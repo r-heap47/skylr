@@ -244,4 +244,3 @@ func (ovr *Overseer) removeShard(oldShard shard) {
 
 	log.Printf("[INFO] shard %s removed. total shards: %d\n", oldShard.addr, len(ovr.shards))
 }
-

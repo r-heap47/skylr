@@ -18,7 +18,7 @@ func staticMetrics(agg AggregatedMetrics) MetricsCollector {
 }
 
 // fastConfig returns a Config with near-zero delays for testing.
-func fastConfig(collector MetricsCollector, rules []ScalingRule, sustainedFor int, prov *mocks.ShardProvisionerMock) Config {
+func fastConfig(collector MetricsCollector, rules []ScalingRule, sustainedFor int) Config {
 	return Config{
 		EvalInterval:   time.Millisecond,
 		Cooldown:       time.Millisecond,
@@ -36,7 +36,7 @@ func TestAutoscaler_NoRules(t *testing.T) {
 	prov := mocks.NewShardProvisionerMock(mc).
 		DeprovisionMock.Optional().Return(nil)
 
-	as := New(prov, fastConfig(staticMetrics(AggregatedMetrics{}), nil, 1, prov))
+	as := New(prov, fastConfig(staticMetrics(AggregatedMetrics{}), nil, 1))
 
 	done := make(chan struct{})
 	go func() {
@@ -67,7 +67,7 @@ func TestAutoscaler_SustainedBreach(t *testing.T) {
 	rule := ItemCountRule{Threshold: 1} // always triggers (ShardCount=1, TotalItems=100)
 	agg := AggregatedMetrics{ShardCount: 1, TotalItems: 100}
 
-	as := New(prov, fastConfig(staticMetrics(agg), []ScalingRule{rule}, sustainedFor, prov))
+	as := New(prov, fastConfig(staticMetrics(agg), []ScalingRule{rule}, sustainedFor))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

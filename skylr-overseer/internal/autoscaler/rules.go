@@ -21,7 +21,7 @@ func (r ItemCountRule) Evaluate(agg AggregatedMetrics) (bool, string) {
 		return false, ""
 	}
 
-	perShard := agg.TotalItems / uint64(agg.ShardCount)
+	perShard := agg.TotalItems / uint64(agg.ShardCount) //nolint:gosec // ShardCount is always positive (checked above)
 	if perShard >= r.Threshold {
 		return true, fmt.Sprintf("items/shard %d >= threshold %d (total=%d shards=%d)",
 			perShard, r.Threshold, agg.TotalItems, agg.ShardCount)
