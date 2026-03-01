@@ -127,4 +127,6 @@ message MetricsResponse {
     uint64 total_deletes = 6;
     // uptime
     int64 uptime_seconds = 7;
+    // storage
+    uint64 item_count = 8;                // number of entries currently in storage
 }
