@@ -190,6 +190,13 @@ func (s *noeviction) Scan(ctx context.Context) iter.Seq2[*storage.Entry, error] 
 	}
 }
 
+func (s *noeviction) Len(_ context.Context) (int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return len(s.store), nil
+}
+
 // cleanupLoop periodically cleanes up expired entries
 func (s *noeviction) cleanupLoop() {
 	// waiting for shard to start

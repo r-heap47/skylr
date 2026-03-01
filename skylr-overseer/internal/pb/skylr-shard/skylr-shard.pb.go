@@ -559,6 +559,8 @@ type MetricsResponse struct {
 	TotalDeletes uint64 `protobuf:"varint,6,opt,name=total_deletes,json=totalDeletes,proto3" json:"total_deletes,omitempty"`
 	// uptime
 	UptimeSeconds int64 `protobuf:"varint,7,opt,name=uptime_seconds,json=uptimeSeconds,proto3" json:"uptime_seconds,omitempty"`
+	// storage
+	ItemCount     uint64 `protobuf:"varint,8,opt,name=item_count,json=itemCount,proto3" json:"item_count,omitempty"` // number of entries currently in storage
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -642,6 +644,13 @@ func (x *MetricsResponse) GetUptimeSeconds() int64 {
 	return 0
 }
 
+func (x *MetricsResponse) GetItemCount() uint64 {
+	if x != nil {
+		return x.ItemCount
+	}
+	return 0
+}
+
 var File_skylr_shard_skylr_shard_proto protoreflect.FileDescriptor
 
 const file_skylr_shard_skylr_shard_proto_rawDesc = "" +
@@ -677,7 +686,7 @@ const file_skylr_shard_skylr_shard_proto_rawDesc = "" +
 	"\x03ttl\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x03ttl\"{\n" +
 	"\fScanResponse\x12+\n" +
 	"\x05entry\x18\x01 \x01(\v2\x15.skylr_shard.v1.EntryR\x05entry\x12>\n" +
-	"\rremaining_ttl\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\fremainingTtl\"\x99\x02\n" +
+	"\rremaining_ttl\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\fremainingTtl\"\xb8\x02\n" +
 	"\x0fMetricsResponse\x12\x1b\n" +
 	"\tcpu_usage\x18\x01 \x01(\x01R\bcpuUsage\x12(\n" +
 	"\x10memory_rss_bytes\x18\x02 \x01(\x04R\x0ememoryRssBytes\x125\n" +
@@ -687,7 +696,9 @@ const file_skylr_shard_skylr_shard_proto_rawDesc = "" +
 	"\n" +
 	"total_sets\x18\x05 \x01(\x04R\ttotalSets\x12#\n" +
 	"\rtotal_deletes\x18\x06 \x01(\x04R\ftotalDeletes\x12%\n" +
-	"\x0euptime_seconds\x18\a \x01(\x03R\ruptimeSeconds2\xad\x03\n" +
+	"\x0euptime_seconds\x18\a \x01(\x03R\ruptimeSeconds\x12\x1d\n" +
+	"\n" +
+	"item_count\x18\b \x01(\x04R\titemCount2\xad\x03\n" +
 	"\x05Shard\x12S\n" +
 	"\x03Get\x12\x1a.skylr_shard.v1.GetRequest\x1a\x1b.skylr_shard.v1.GetResponse\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/api/v1/get\x12Q\n" +
 	"\x03Set\x12\x1a.skylr_shard.v1.SetRequest\x1a\x16.google.protobuf.Empty\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/api/v1/set\x12_\n" +

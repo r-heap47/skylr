@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	v1 "github.com/r-heap47/skylr/skylr-overseer/internal/api/grpc/v1"
+	ascaler "github.com/r-heap47/skylr/skylr-overseer/internal/autoscaler"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/config"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/overseer"
 	pbovr "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-overseer"
@@ -80,6 +81,34 @@ func Run() error {
 			IsShardRegistered:     ovr.HasShard,
 		})
 		log.Printf("[INFO] process provisioner enabled: binary=%s max_shards=%d", pc.BinaryPath, pc.MaxShards)
+	}
+
+	// === AUTOSCALER ===
+
+	if prov != nil && cfg.Autoscaler.Enabled {
+		ac := cfg.Autoscaler
+
+		var rules []ascaler.ScalingRule
+		if ac.Rules.ItemCount.Enabled {
+			rules = append(rules, ascaler.ItemCountRule{Threshold: ac.Rules.ItemCount.Threshold})
+		}
+
+		sustainedFor := ac.SustainedFor
+		if sustainedFor <= 0 {
+			sustainedFor = 1
+		}
+
+		as := ascaler.New(prov, ascaler.Config{
+			EvalInterval:   ac.EvalInterval.Duration,
+			Cooldown:       ac.Cooldown.Duration,
+			SustainedFor:   sustainedFor,
+			Rules:          rules,
+			CollectMetrics: ovr.CollectAggregatedMetrics,
+		})
+
+		go as.Run(ctx)
+		log.Printf("[INFO] autoscaler enabled: eval_interval=%s cooldown=%s sustained_for=%d",
+			ac.EvalInterval.Duration, ac.Cooldown.Duration, sustainedFor)
 	}
 
 	impl := v1.New(&v1.Config{

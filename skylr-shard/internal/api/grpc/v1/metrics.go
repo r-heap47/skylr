@@ -18,27 +18,33 @@ func (i *Implementation) Metrics(ctx context.Context, _ *emptypb.Empty) (*pbshar
 		cpuUsage  float64
 		rss       uint64
 		heapAlloc uint64
+		itemCount int
 	)
 
-	g, ctx := errgroup.WithContext(ctx)
+	eg, ctx := errgroup.WithContext(ctx)
 
-	g.Go(func() error {
+	eg.Go(func() error {
 		v, err := i.collector.UsageCPU(ctx)
 		cpuUsage = v
 		return err
 	})
-	g.Go(func() error {
+	eg.Go(func() error {
 		v, err := i.collector.MemoryRSS(ctx)
 		rss = v
 		return err
 	})
-	g.Go(func() error {
+	eg.Go(func() error {
 		v, err := i.collector.MemoryHeapAlloc(ctx)
 		heapAlloc = v
 		return err
 	})
+	eg.Go(func() error {
+		v, err := i.shard.Len(ctx)
+		itemCount = v
+		return err
+	})
 
-	if err := g.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("metrics collection: %s", err))
 	}
 
@@ -50,5 +56,6 @@ func (i *Implementation) Metrics(ctx context.Context, _ *emptypb.Empty) (*pbshar
 		TotalSets:            metrics.TotalSets(),
 		TotalDeletes:         metrics.TotalDeletes(),
 		UptimeSeconds:        i.collector.Uptime(),
+		ItemCount:            uint64(itemCount),
 	}, nil
 }

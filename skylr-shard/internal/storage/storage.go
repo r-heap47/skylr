@@ -20,6 +20,9 @@ type Storage interface {
 	// Scan yields all non-expired entries. It is intended for key migration and
 	// should be called with a context that carries an appropriate deadline.
 	Scan(ctx context.Context) iter.Seq2[*Entry, error]
+	// Len returns the number of entries currently in the storage (including
+	// entries that may be expired but not yet cleaned up).
+	Len(ctx context.Context) (int, error)
 }
 
 // Entry - key-value pair with additional data
