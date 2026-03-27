@@ -8,7 +8,7 @@ overseer:
   observer_metrics_timeout: "5s"
   observer_error_threshold: 3
   virtual_nodes_per_shard: 150
-  log_storage_on_metrics: false  # debug: log storage contents on each metrics poll
+  log_storage_on_metrics: false
 
 provisioner:
   type: process
@@ -20,17 +20,35 @@ provisioner:
     grpc_port_min: 5000
     grpc_port_max: 5999
     max_shards: 5
-    initial_shards: 1  # number of shards to provision on boot; 0 = none
+    initial_shards: 1
     registration_timeout: "5s"
-    post_registration_delay: "1s"   # was 3s; set >0 only if shard needs extra warmup before observer
+    post_registration_delay: "1s"
+
+# Kubernetes provisioner (uncomment and set type: kubernetes to use)
+#  type: kubernetes
+#  kubernetes:
+#    kubeconfig: ""           # empty = in-cluster auth; or path to ~/.kube/config
+#    namespace: "default"
+#    image: "skylr-shard:latest"
+#    overseer_address: "skylr-overseer.default.svc.cluster.local:9000"
+#    grpc_port: 5000
+#    gateway_port: 5001
+#    max_shards: 10
+#    initial_shards: 3
+#    registration_timeout: "30s"
+#    post_registration_delay: "2s"
+#    resources:
+#      cpu_request: "100m"
+#      cpu_limit: "500m"
+#      memory_request: "64Mi"
+#      memory_limit: "256Mi"
 
 autoscaler:
   enabled: true
-  eval_interval: "1s"    # matches observer_delay so each tick uses a fresh snapshot
-  cooldown: "5s"         # pause after scale-up while migrateKeys redistributes keys
-  sustained_for: 3       # rule must fire this many consecutive ticks before scale-up
+  eval_interval: "1s"
+  cooldown: "5s"
+  sustained_for: 3
   rules:
     item_count:
       enabled: true
-      # items/shard average (TotalItems / ShardCount)
-      threshold: 100    
+      threshold: 100
