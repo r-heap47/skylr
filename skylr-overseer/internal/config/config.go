@@ -35,8 +35,9 @@ type Config struct {
 
 // ProvisionerConfig holds provisioner settings. When type is empty, provisioning is disabled.
 type ProvisionerConfig struct {
-	Type    string                `yaml:"type"`
-	Process ProcessProvisionerCfg `yaml:"process"`
+	Type       string                   `yaml:"type"`
+	Process    ProcessProvisionerCfg    `yaml:"process"`
+	Kubernetes KubernetesProvisionerCfg `yaml:"kubernetes"`
 }
 
 // ProcessProvisionerCfg holds ProcessProvisioner-specific config.
@@ -51,6 +52,27 @@ type ProcessProvisionerCfg struct {
 	InitialShards         int      `yaml:"initial_shards"` // number of shards to provision on boot; 0 = none
 	RegistrationTimeout   Duration `yaml:"registration_timeout"`
 	PostRegistrationDelay Duration `yaml:"post_registration_delay"`
+}
+
+type KubernetesProvisionerCfg struct {
+	Kubeconfig            string          `yaml:"kubeconfig"`
+	Namespace             string          `yaml:"namespace"`
+	Image                 string          `yaml:"image"`
+	OverseerAddress       string          `yaml:"overseer_address"`
+	GRPCPort              int             `yaml:"grpc_port"`
+	GatewayPort           int             `yaml:"gateway_port"`
+	MaxShards             int             `yaml:"max_shards"`
+	InitialShards         int             `yaml:"initial_shards"`
+	RegistrationTimeout   Duration        `yaml:"registration_timeout"`
+	PostRegistrationDelay Duration        `yaml:"post_registration_delay"`
+	Resources             PodResourcesCfg `yaml:"resources"`
+}
+
+type PodResourcesCfg struct {
+	CPURequest    string `yaml:"cpu_request"`
+	CPULimit      string `yaml:"cpu_limit"`
+	MemoryRequest string `yaml:"memory_request"`
+	MemoryLimit   string `yaml:"memory_limit"`
 }
 
 // AutoscalerConfig holds settings for the autoscaler.
