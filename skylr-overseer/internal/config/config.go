@@ -54,6 +54,7 @@ type ProcessProvisionerCfg struct {
 	PostRegistrationDelay Duration `yaml:"post_registration_delay"`
 }
 
+// KubernetesProvisionerCfg holds KubernetesProvisioner-specific config.
 type KubernetesProvisionerCfg struct {
 	Kubeconfig            string          `yaml:"kubeconfig"`
 	Namespace             string          `yaml:"namespace"`
@@ -68,6 +69,7 @@ type KubernetesProvisionerCfg struct {
 	Resources             PodResourcesCfg `yaml:"resources"`
 }
 
+// PodResourcesCfg holds CPU and memory resource requests and limits for a shard pod.
 type PodResourcesCfg struct {
 	CPURequest    string `yaml:"cpu_request"`
 	CPULimit      string `yaml:"cpu_limit"`

@@ -86,10 +86,8 @@ func New(cfg Config) *Provisioner {
 // If kubeconfig is non-empty it loads that file; otherwise it tries in-cluster config,
 // then falls back to the default kubeconfig location (~/.kube/config).
 func NewClientset(kubeconfig string) (kubernetes.Interface, error) {
-	var (
-		restCfg *rest.Config
-		err     error
-	)
+	var restCfg *rest.Config
+	var err error
 
 	if kubeconfig != "" {
 		restCfg, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
@@ -120,11 +118,11 @@ func NewClientset(kubeconfig string) (kubernetes.Interface, error) {
 func (p *Provisioner) Provision(ctx context.Context) (string, error) {
 	// Check max-shards limit before creating the pod.
 	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	if p.cfg.ShardCount != nil && p.cfg.ShardCount() >= p.cfg.MaxShards {
-		p.mu.Unlock()
 		return "", fmt.Errorf("max shards (%d) reached", p.cfg.MaxShards)
 	}
-	p.mu.Unlock()
 
 	podName, err := generatePodName()
 	if err != nil {
@@ -173,14 +171,13 @@ func (p *Provisioner) Provision(ctx context.Context) (string, error) {
 // Deprovision deletes the shard Pod associated with addr.
 func (p *Provisioner) Deprovision(ctx context.Context, addr string) error {
 	p.mu.Lock()
+	defer p.mu.Unlock()
 
 	podName, ok := p.pods[addr]
 	if !ok {
-		p.mu.Unlock()
 		return fmt.Errorf("shard %q not found", addr)
 	}
 	delete(p.pods, addr)
-	p.mu.Unlock()
 
 	err := p.cfg.Client.CoreV1().Pods(p.cfg.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 	if err != nil {
@@ -252,8 +249,8 @@ func (p *Provisioner) buildPod(name string) *corev1.Pod {
 						"-overseer", p.cfg.OverseerAddress,
 					},
 					Ports: []corev1.ContainerPort{
-						{Name: "grpc", ContainerPort: int32(p.cfg.GRPCPort), Protocol: corev1.ProtocolTCP},
-						{Name: "gateway", ContainerPort: int32(p.cfg.GatewayPort), Protocol: corev1.ProtocolTCP},
+						{Name: "grpc", ContainerPort: int32(p.cfg.GRPCPort), Protocol: corev1.ProtocolTCP},       //nolint:gosec // port numbers fit in int32
+						{Name: "gateway", ContainerPort: int32(p.cfg.GatewayPort), Protocol: corev1.ProtocolTCP}, //nolint:gosec // port numbers fit in int32
 					},
 					Resources: p.buildResourceRequirements(),
 				},
@@ -294,7 +291,6 @@ func (p *Provisioner) buildResourceRequirements() corev1.ResourceRequirements {
 // waitForPodReady polls until the pod has a non-empty PodIP and its container is running.
 func (p *Provisioner) waitForPodReady(ctx context.Context, podName string) (string, error) {
 	deadline := time.NewTimer(p.cfg.RegistrationTimeout)
-
 	defer deadline.Stop()
 	ticker := time.NewTicker(p.cfg.RegistrationPollInterval)
 	defer ticker.Stop()
@@ -340,7 +336,7 @@ func (p *Provisioner) waitForRegistration(ctx context.Context, addr string) erro
 
 	for {
 		if p.cfg.IsShardRegistered(addr) {
-			log.Printf("[INFO] k8s provisioner: shard %s registered", addr)
+			log.Printf("[INFO] provisioner: shard %s registered", addr)
 			if p.cfg.PostRegistrationDelay > 0 {
 				if err := sleep(ctx, p.cfg.PostRegistrationDelay); err != nil {
 					return err

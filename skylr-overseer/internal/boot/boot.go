@@ -22,8 +22,8 @@ import (
 	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner"
 	k8sprov "github.com/r-heap47/skylr/skylr-overseer/internal/provisioner/provisioners/kubernetes"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner/provisioners/process"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var configPath = flag.String("config", "config/config.yaml", "Path to YAML config file")
@@ -52,7 +52,8 @@ func Run() error {
 	})
 
 	var prov provisioner.ShardProvisioner
-	if cfg.Provisioner.Type == "process" {
+	switch cfg.Provisioner.Type {
+	case "process":
 		pc := cfg.Provisioner.Process
 		if pc.BinaryPath == "" || pc.ConfigPath == "" || pc.OverseerAddress == "" {
 			return fmt.Errorf("provisioner.process requires binary_path, config_path, overseer_address")
@@ -83,7 +84,7 @@ func Run() error {
 			IsShardRegistered:     ovr.HasShard,
 		})
 		log.Printf("[INFO] process provisioner enabled: binary=%s max_shards=%d", pc.BinaryPath, pc.MaxShards)
-	} else if cfg.Provisioner.Type == "kubernetes" {
+	case "kubernetes":
 		kc := cfg.Provisioner.Kubernetes
 		if kc.Image == "" || kc.OverseerAddress == "" || kc.Namespace == "" {
 			return fmt.Errorf("provisioner.kubernetes requires image, overseer_address, namespace")
