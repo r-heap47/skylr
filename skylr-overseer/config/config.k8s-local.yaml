@@ -1,0 +1,41 @@
+grpc:
+  host: "0.0.0.0"
+  port: "9000"
+
+overseer:
+  check_for_shard_failures_delay: "1s"
+  observer_delay: "1s"
+  observer_metrics_timeout: "5s"
+  observer_error_threshold: 15  # k8s shard takes 2-3s to start serving after registration
+  virtual_nodes_per_shard: 150
+  log_storage_on_metrics: false
+
+provisioner:
+  type: kubernetes
+  kubernetes:
+    kubeconfig: ""                    # empty = ~/.kube/config (kind context)
+    namespace: "default"
+    image: "skylr-shard:latest"
+    overseer_address: "172.19.0.1:9000"  # kind bridge gateway — reachable from pods to host
+    grpc_port: 5000
+    gateway_port: 5001
+    max_shards: 5
+    initial_shards: 1
+    registration_timeout: "30s"
+    post_registration_delay: "2s"
+    image_pull_policy: "Never"          # image loaded into kind directly, no registry
+    resources:
+      cpu_request: "100m"
+      cpu_limit: "500m"
+      memory_request: "64Mi"
+      memory_limit: "256Mi"
+
+autoscaler:
+  enabled: true
+  eval_interval: "1s"
+  cooldown: "5s"
+  sustained_for: 3
+  rules:
+    item_count:
+      enabled: true
+      threshold: 100

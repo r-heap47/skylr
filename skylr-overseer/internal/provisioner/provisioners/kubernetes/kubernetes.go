@@ -47,6 +47,8 @@ type Config struct {
 	PostRegistrationDelay time.Duration
 	// Resources defines optional resource requests/limits for shard pods.
 	Resources ResourcesConfig
+	// ImagePullPolicy overrides the default pull policy (e.g. corev1.PullNever for local clusters).
+	ImagePullPolicy corev1.PullPolicy
 }
 
 // ResourcesConfig holds parsed Kubernetes resource requests and limits.
@@ -116,15 +118,27 @@ func NewClientset(kubeconfig string) (kubernetes.Interface, error) {
 
 // Provision creates a new shard Pod and returns its address once registered.
 func (p *Provisioner) Provision(ctx context.Context) (string, error) {
-	// Check max-shards limit before creating the pod.
-	if err := p.checkMaxShards(); err != nil {
-		return "", err
-	}
-
 	podName, err := generatePodName()
 	if err != nil {
 		return "", fmt.Errorf("generate pod name: %w", err)
 	}
+
+	// Reserve a slot atomically. Uses len(p.pods) so in-flight pods are counted too,
+	// preventing concurrent over-provisioning (TOCTOU-safe).
+	if err := p.reserveSlot(podName); err != nil {
+		return "", err
+	}
+	slotReleased := false
+	releaseSlot := func() {
+		if !slotReleased {
+			slotReleased = true
+			p.mu.Lock()
+			delete(p.pods, podName)
+			p.mu.Unlock()
+		}
+	}
+	defer releaseSlot()
+
 	pod := p.buildPod(podName)
 
 	_, err = p.cfg.Client.CoreV1().Pods(p.cfg.Namespace).Create(ctx, pod, metav1.CreateOptions{})
@@ -147,9 +161,11 @@ func (p *Provisioner) Provision(ctx context.Context) (string, error) {
 	}
 	addr := net.JoinHostPort(podIP, strconv.Itoa(p.cfg.GRPCPort))
 
-	// Track addr → podName so Deprovision can find the pod.
+	// Migrate reservation: replace podName placeholder with the real addr → podName entry.
 	p.mu.Lock()
+	delete(p.pods, podName)
 	p.pods[addr] = podName
+	slotReleased = true // addr entry now owns the slot; defer must not delete it
 	p.mu.Unlock()
 
 	// Wait for the shard to register with the overseer.
@@ -164,13 +180,15 @@ func (p *Provisioner) Provision(ctx context.Context) (string, error) {
 	return addr, nil
 }
 
-// checkMaxShards returns an error if the shard limit has been reached. Caller must not hold p.mu.
-func (p *Provisioner) checkMaxShards() error {
+// reserveSlot atomically checks the shard limit and adds a placeholder entry to p.pods.
+// Uses len(p.pods) so in-flight (not yet registered) pods count toward the limit.
+func (p *Provisioner) reserveSlot(podName string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if p.cfg.ShardCount != nil && p.cfg.ShardCount() >= p.cfg.MaxShards {
+	if len(p.pods) >= p.cfg.MaxShards {
 		return fmt.Errorf("max shards (%d) reached", p.cfg.MaxShards)
 	}
+	p.pods[podName] = "" // placeholder — migrated to addr once the pod has an IP
 	return nil
 }
 
@@ -240,8 +258,9 @@ func (p *Provisioner) buildPod(name string) *corev1.Pod {
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
 				{
-					Name:  "shard",
-					Image: p.cfg.Image,
+					Name:            "shard",
+					Image:           p.cfg.Image,
+					ImagePullPolicy: p.cfg.ImagePullPolicy,
 					// POD_IP is injected via Downward API and expanded in Args.
 					// The shard binds on its own PodIP and registers that address
 					// with the overseer — avoiding the 0.0.0.0 ambiguity.

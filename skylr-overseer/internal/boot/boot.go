@@ -23,6 +23,7 @@ import (
 	k8sprov "github.com/r-heap47/skylr/skylr-overseer/internal/provisioner/provisioners/kubernetes"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner/provisioners/process"
 	"google.golang.org/grpc"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -119,6 +120,7 @@ func Run() error {
 			ShardCount:            ovr.ShardCount,
 			IsShardRegistered:     ovr.HasShard,
 			Resources:             resources,
+			ImagePullPolicy:       corev1.PullPolicy(kc.ImagePullPolicy),
 		})
 		log.Printf("[INFO] kubernetes provisioner enabled: image=%s namespace=%s max_shards=%d", kc.Image, kc.Namespace, kc.MaxShards)
 	}

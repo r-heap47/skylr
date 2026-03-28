@@ -355,8 +355,13 @@ func TestProvision_MaxShardsReached(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	cfg := fastConfig(client)
 	cfg.MaxShards = 2
-	cfg.ShardCount = func() int { return 2 }
 	p := New(cfg)
+
+	// Simulate two already-tracked pods to fill the limit.
+	p.mu.Lock()
+	p.pods["10.0.1.1:9000"] = "skylr-shard-aaaa0001"
+	p.pods["10.0.1.2:9000"] = "skylr-shard-aaaa0002"
+	p.mu.Unlock()
 
 	_, err := p.Provision(context.Background())
 	require.Error(t, err)
@@ -372,8 +377,12 @@ func TestProvision_MaxShardsNotReached(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	cfg := fastConfig(client)
 	cfg.MaxShards = 2
-	cfg.ShardCount = func() int { return 1 }
 	p := New(cfg)
+
+	// One slot already occupied — one slot still free.
+	p.mu.Lock()
+	p.pods["10.0.1.1:9000"] = "skylr-shard-aaaa0001"
+	p.mu.Unlock()
 
 	go func() {
 		podName := firstPodName(t, client, testNS)

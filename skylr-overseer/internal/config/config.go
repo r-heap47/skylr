@@ -67,6 +67,7 @@ type KubernetesProvisionerCfg struct {
 	RegistrationTimeout   Duration        `yaml:"registration_timeout"`
 	PostRegistrationDelay Duration        `yaml:"post_registration_delay"`
 	Resources             PodResourcesCfg `yaml:"resources"`
+	ImagePullPolicy       string          `yaml:"image_pull_policy"` // e.g. "Never" for local kind clusters
 }
 
 // PodResourcesCfg holds CPU and memory resource requests and limits for a shard pod.
