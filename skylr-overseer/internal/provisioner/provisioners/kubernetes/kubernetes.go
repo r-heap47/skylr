@@ -117,11 +117,8 @@ func NewClientset(kubeconfig string) (kubernetes.Interface, error) {
 // Provision creates a new shard Pod and returns its address once registered.
 func (p *Provisioner) Provision(ctx context.Context) (string, error) {
 	// Check max-shards limit before creating the pod.
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if p.cfg.ShardCount != nil && p.cfg.ShardCount() >= p.cfg.MaxShards {
-		return "", fmt.Errorf("max shards (%d) reached", p.cfg.MaxShards)
+	if err := p.checkMaxShards(); err != nil {
+		return "", err
 	}
 
 	podName, err := generatePodName()
@@ -136,7 +133,6 @@ func (p *Provisioner) Provision(ctx context.Context) (string, error) {
 	}
 
 	// Ensure the pod is deleted if anything goes wrong after creation.
-	var addr string
 	cleanup := func() {
 		deleteCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -149,7 +145,7 @@ func (p *Provisioner) Provision(ctx context.Context) (string, error) {
 		cleanup()
 		return "", fmt.Errorf("wait for pod %q ready: %w", podName, err)
 	}
-	addr = net.JoinHostPort(podIP, strconv.Itoa(p.cfg.GRPCPort))
+	addr := net.JoinHostPort(podIP, strconv.Itoa(p.cfg.GRPCPort))
 
 	// Track addr → podName so Deprovision can find the pod.
 	p.mu.Lock()
@@ -168,23 +164,42 @@ func (p *Provisioner) Provision(ctx context.Context) (string, error) {
 	return addr, nil
 }
 
-// Deprovision deletes the shard Pod associated with addr.
+// checkMaxShards returns an error if the shard limit has been reached. Caller must not hold p.mu.
+func (p *Provisioner) checkMaxShards() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.cfg.ShardCount != nil && p.cfg.ShardCount() >= p.cfg.MaxShards {
+		return fmt.Errorf("max shards (%d) reached", p.cfg.MaxShards)
+	}
+	return nil
+}
+
+// Deprovision deletes the shard Pod associated with addlfd
 func (p *Provisioner) Deprovision(ctx context.Context, addr string) error {
+	podName, err := p.removePod(addr)
+	if err != nil {
+		return err
+	}
+
+	if err := p.cfg.Client.CoreV1().Pods(p.cfg.Namespace).Delete(ctx, podName, metav1.DeleteOptions{}); err != nil {
+		return fmt.Errorf("delete pod %q: %w", podName, err)
+	}
+
+	return nil
+}
+
+// removePod removes addr from the tracking map and returns the associated pod name.
+func (p *Provisioner) removePod(addr string) (string, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	podName, ok := p.pods[addr]
 	if !ok {
-		return fmt.Errorf("shard %q not found", addr)
+		return "", fmt.Errorf("shard %q not found", addr)
 	}
 	delete(p.pods, addr)
 
-	err := p.cfg.Client.CoreV1().Pods(p.cfg.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-	if err != nil {
-		return fmt.Errorf("delete pod %q: %w", podName, err)
-	}
-
-	return nil
+	return podName, nil
 }
 
 // Shutdown deletes all provisioned shard pods. Call when the overseer exits.
