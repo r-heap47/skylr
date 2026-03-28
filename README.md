@@ -11,8 +11,17 @@ Skylr — распределённый in-memory key-value кеш с гориз�
 ## Компоненты
 
 - **skylr-overseer** — центральный gRPC-сервис: роутинг, мониторинг шардов, подъём новых шардов, автоскейлинг
-- **skylr-shard** — хранилище ключей, поднимается overseer'ом как процесс; поддерживает политики вытеснения: NoEviction, LRU, LFU, Random
+- **skylr-shard** — хранилище ключей; поддерживает политики вытеснения: NoEviction, LRU, LFU, Random
 - **skylr-client** — CLI для get/set/delete
+
+## Provisioner
+
+Overseer поддерживает два режима запуска шардов, задаётся через `provisioner.type` в конфиге:
+
+| Тип | Описание |
+|-----|----------|
+| `process` | Шарды запускаются как дочерние процессы на той же машине. Для локальной разработки без k8s. |
+| `kubernetes` | Шарды запускаются как Pod'ы в Kubernetes-кластере. Для production и локального тестирования с kind. |
 
 ## Требования
 
@@ -27,7 +36,7 @@ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 ```
 
-## Локальный запуск
+## Локальный запуск (process provisioner)
 
 ### 1. Собрать шард
 
@@ -73,6 +82,87 @@ export SKYLR_OVERSEER=localhost:9000
 ./bin/skylr-client set foo bar
 ./bin/skylr-client get foo
 ./bin/skylr-client delete foo
+```
+
+## Локальный запуск с Kubernetes (kind)
+
+Для тестирования Kubernetes provisioner на локальной машине используется [kind](https://kind.sigs.k8s.io/) — кластер внутри Docker.
+
+### Требования
+
+- Docker
+- [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+- kubectl
+
+### Настройка (один раз)
+
+```bash
+cd skylr-overseer
+make kind-setup
+```
+
+Что происходит:
+1. Создаётся kind-кластер `skylr` (если не существует)
+2. Собирается образ `skylr-shard:latest` и загружается напрямую в containerd кластера
+3. Применяется RBAC (`deploy/k8s-local/rbac.yaml`) — права overseer на управление Pod'ами
+4. Добавляется маршрут к pod-сети кластера (`10.244.x.x`) через IP ноды kind
+
+### Запуск
+
+```bash
+make run-k8s-local
+```
+
+Overseer запускается локально и создаёт шарды как Pod'ы в кластере. Шарды регистрируются обратно через bridge IP kind (`172.19.0.1:9000`).
+
+Ожидаемые логи:
+
+```
+[INFO] kubernetes provisioner enabled: image=skylr-shard:latest namespace=default max_shards=5
+[INFO] provisioner: shard 10.244.0.x:5000 registered
+[INFO] provisioned 1 initial shards
+```
+
+Проверить Pod'ы:
+
+```bash
+kubectl get pods -l managed-by=skylr-overseer
+```
+
+При остановке overseer (Ctrl-C) все Pod'ы удаляются автоматически.
+
+### Конфигурация (`config/config.k8s-local.yaml`)
+
+```yaml
+provisioner:
+  type: kubernetes
+  kubernetes:
+    namespace: "default"
+    image: "skylr-shard:latest"
+    overseer_address: "172.19.0.1:9000"  # bridge gateway kind → хост
+    grpc_port: 5000
+    gateway_port: 5001
+    max_shards: 5
+    initial_shards: 1
+    registration_timeout: "30s"
+    post_registration_delay: "2s"
+    image_pull_policy: "Never"           # образ загружен в kind напрямую
+    resources:
+      cpu_request: "100m"
+      cpu_limit: "500m"
+      memory_request: "64Mi"
+      memory_limit: "256Mi"
+```
+
+### Примечание про прокси
+
+Если на машине запущен локальный прокси (Clash, Nekoray и т.п.), он может перехватывать gRPC-соединения к pod-сети (`10.x.x.x`). В репозитории есть `.envrc` для [direnv](https://direnv.net/), который автоматически выставляет `NO_PROXY=10.0.0.0/8,localhost,127.0.0.1` при входе в директорию проекта:
+
+```bash
+sudo apt install direnv
+echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
+source ~/.bashrc
+direnv allow  # один раз в корне репозитория
 ```
 
 ## Автоскейлинг

@@ -20,8 +20,11 @@ import (
 	pbovr "github.com/r-heap47/skylr/skylr-overseer/internal/pb/skylr-overseer"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/pkg/utils"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner"
+	k8sprov "github.com/r-heap47/skylr/skylr-overseer/internal/provisioner/provisioners/kubernetes"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner/provisioners/process"
 	"google.golang.org/grpc"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var configPath = flag.String("config", "config/config.yaml", "Path to YAML config file")
@@ -50,7 +53,8 @@ func Run() error {
 	})
 
 	var prov provisioner.ShardProvisioner
-	if cfg.Provisioner.Type == "process" {
+	switch cfg.Provisioner.Type {
+	case "process":
 		pc := cfg.Provisioner.Process
 		if pc.BinaryPath == "" || pc.ConfigPath == "" || pc.OverseerAddress == "" {
 			return fmt.Errorf("provisioner.process requires binary_path, config_path, overseer_address")
@@ -81,6 +85,44 @@ func Run() error {
 			IsShardRegistered:     ovr.HasShard,
 		})
 		log.Printf("[INFO] process provisioner enabled: binary=%s max_shards=%d", pc.BinaryPath, pc.MaxShards)
+	case "kubernetes":
+		kc := cfg.Provisioner.Kubernetes
+		if kc.Image == "" || kc.OverseerAddress == "" || kc.Namespace == "" {
+			return fmt.Errorf("provisioner.kubernetes requires image, overseer_address, namespace")
+		}
+		if kc.MaxShards <= 0 {
+			return fmt.Errorf("provisioner.kubernetes requires max_shards > 0")
+		}
+		if kc.InitialShards < 0 || kc.InitialShards > kc.MaxShards {
+			return fmt.Errorf("provisioner.kubernetes requires 0 <= initial_shards <= max_shards, got initial_shards=%d max_shards=%d", kc.InitialShards, kc.MaxShards)
+		}
+
+		client, err := k8sprov.NewClientset(kc.Kubeconfig)
+		if err != nil {
+			return fmt.Errorf("kubernetes clientset: %w", err)
+		}
+
+		resources, err := parseResourceCfg(kc.Resources)
+		if err != nil {
+			return fmt.Errorf("provisioner.kubernetes resources: %w", err)
+		}
+
+		prov = k8sprov.New(k8sprov.Config{
+			Client:                client,
+			Namespace:             kc.Namespace,
+			Image:                 kc.Image,
+			OverseerAddress:       kc.OverseerAddress,
+			GRPCPort:              kc.GRPCPort,
+			GatewayPort:           kc.GatewayPort,
+			MaxShards:             kc.MaxShards,
+			RegistrationTimeout:   kc.RegistrationTimeout.Duration,
+			PostRegistrationDelay: kc.PostRegistrationDelay.Duration,
+			ShardCount:            ovr.ShardCount,
+			IsShardRegistered:     ovr.HasShard,
+			Resources:             resources,
+			ImagePullPolicy:       corev1.PullPolicy(kc.ImagePullPolicy),
+		})
+		log.Printf("[INFO] kubernetes provisioner enabled: image=%s namespace=%s max_shards=%d", kc.Image, kc.Namespace, kc.MaxShards)
 	}
 
 	// === AUTOSCALER ===
@@ -138,12 +180,19 @@ func Run() error {
 
 	// === INITIAL SHARDS (after gRPC is listening so shards can register) ===
 
-	if prov != nil && cfg.Provisioner.Type == "process" && cfg.Provisioner.Process.InitialShards > 0 {
+	initialShards := 0
+	switch cfg.Provisioner.Type {
+	case "process":
+		initialShards = cfg.Provisioner.Process.InitialShards
+	case "kubernetes":
+		initialShards = cfg.Provisioner.Kubernetes.InitialShards
+	}
+
+	if prov != nil && initialShards > 0 {
 		<-serveReady
-		pc := cfg.Provisioner.Process
 
 		g, gCtx := errgroup.WithContext(ctx)
-		for i := 0; i < pc.InitialShards; i++ {
+		for i := 0; i < initialShards; i++ {
 			g.Go(func() error {
 				_, err := prov.Provision(gCtx)
 				return err
@@ -153,7 +202,7 @@ func Run() error {
 		if err := g.Wait(); err != nil {
 			return fmt.Errorf("initial shard provisioning: %w", err)
 		}
-		log.Printf("[INFO] provisioned %d initial shards", pc.InitialShards)
+		log.Printf("[INFO] provisioned %d initial shards", initialShards)
 	}
 
 	// === GRACEFUL SHUTDOWN ===
@@ -178,4 +227,41 @@ func Run() error {
 	}
 
 	return nil
+}
+
+func parseResourceCfg(r config.PodResourcesCfg) (k8sprov.ResourcesConfig, error) {
+	parse := func(s string) (*resource.Quantity, error) {
+		if s == "" {
+			return nil, nil
+		}
+		q, err := resource.ParseQuantity(s)
+		if err != nil {
+			return nil, err
+		}
+		return &q, nil
+	}
+
+	cpuReq, err := parse(r.CPURequest)
+	if err != nil {
+		return k8sprov.ResourcesConfig{}, fmt.Errorf("cpu_request %q: %w", r.CPURequest, err)
+	}
+	cpuLim, err := parse(r.CPULimit)
+	if err != nil {
+		return k8sprov.ResourcesConfig{}, fmt.Errorf("cpu_limit %q: %w", r.CPULimit, err)
+	}
+	memReq, err := parse(r.MemoryRequest)
+	if err != nil {
+		return k8sprov.ResourcesConfig{}, fmt.Errorf("memory_request %q: %w", r.MemoryRequest, err)
+	}
+	memLim, err := parse(r.MemoryLimit)
+	if err != nil {
+		return k8sprov.ResourcesConfig{}, fmt.Errorf("memory_limit %q: %w", r.MemoryLimit, err)
+	}
+
+	return k8sprov.ResourcesConfig{
+		CPURequest:    cpuReq,
+		CPULimit:      cpuLim,
+		MemoryRequest: memReq,
+		MemoryLimit:   memLim,
+	}, nil
 }
