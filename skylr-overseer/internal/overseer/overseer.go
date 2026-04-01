@@ -30,6 +30,8 @@ type Overseer struct {
 	checkForShardFailuresDelay utils.Provider[time.Duration]
 	observerDelay              utils.Provider[time.Duration]
 	logStorageOnMetrics        utils.Provider[bool]
+
+	failureChan chan string // buffered; failed shard addresses pending reprovisioning
 }
 
 // shard - Shard data used by Overseer
@@ -77,6 +79,7 @@ func New(ovsCtx context.Context, cfg Config) *Overseer {
 		checkForShardFailuresDelay: cfg.CheckForShardFailuresDelay,
 		observerDelay:              cfg.ObserverDelay,
 		logStorageOnMetrics:        cfg.LogStorageOnMetrics,
+		failureChan:                make(chan string, 16),
 	}
 
 	go ovr.checkForShardFailures(ovsCtx)
@@ -180,6 +183,12 @@ func (ovr *Overseer) Lookup(key string) (string, error) {
 	return addr, nil
 }
 
+// FailureNotifications returns the channel on which the overseer publishes the address
+// of each shard removed due to health-check failure.
+func (ovr *Overseer) FailureNotifications() <-chan string {
+	return ovr.failureChan
+}
+
 // checkForShardFailures checks that none of the shards have disconnected.
 // It stops when ctx is cancelled.
 func (ovr *Overseer) checkForShardFailures(ctx context.Context) {
@@ -199,6 +208,12 @@ func (ovr *Overseer) checkForShardFailures(ctx context.Context) {
 				case err := <-s.errChan:
 					log.Printf("[ERROR] shard %s reported failure: %s", addr, err)
 					ovr.removeShard(s)
+					// notify reprovisioner; non-blocking because shardsMu is held here
+					select {
+					case ovr.failureChan <- addr:
+					default:
+						log.Printf("[WARN] overseer: failure channel full, dropping reprovisioning for %s", addr)
+					}
 				default:
 				}
 			}

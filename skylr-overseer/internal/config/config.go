@@ -27,10 +27,19 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 
 // Config is the top-level application configuration.
 type Config struct {
-	GRPC        GRPCConfig        `yaml:"grpc"`
-	Overseer    OverseerConfig    `yaml:"overseer"`
-	Provisioner ProvisionerConfig `yaml:"provisioner"`
-	Autoscaler  AutoscalerConfig  `yaml:"autoscaler"`
+	GRPC          GRPCConfig          `yaml:"grpc"`
+	Overseer      OverseerConfig      `yaml:"overseer"`
+	Provisioner   ProvisionerConfig   `yaml:"provisioner"`
+	Autoscaler    AutoscalerConfig    `yaml:"autoscaler"`
+	Reprovisioner ReprovisionerConfig `yaml:"reprovisioner"`
+}
+
+// ReprovisionerConfig holds settings for the auto-reprovisioner.
+type ReprovisionerConfig struct {
+	Enabled           bool     `yaml:"enabled"`
+	MaxRetries        int      `yaml:"max_retries"` // 0 = unlimited
+	InitialRetryDelay Duration `yaml:"initial_retry_delay"`
+	MaxRetryDelay     Duration `yaml:"max_retry_delay"`
 }
 
 // ProvisionerConfig holds provisioner settings. When type is empty, provisioning is disabled.

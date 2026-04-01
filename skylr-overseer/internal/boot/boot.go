@@ -22,6 +22,7 @@ import (
 	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner"
 	k8sprov "github.com/r-heap47/skylr/skylr-overseer/internal/provisioner/provisioners/kubernetes"
 	"github.com/r-heap47/skylr/skylr-overseer/internal/provisioner/provisioners/process"
+	"github.com/r-heap47/skylr/skylr-overseer/internal/reprovisioner"
 	"google.golang.org/grpc"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -151,6 +152,32 @@ func Run() error {
 		go as.Run(ctx)
 		log.Printf("[INFO] autoscaler enabled: eval_interval=%s cooldown=%s sustained_for=%d",
 			ac.EvalInterval.Duration, ac.Cooldown.Duration, sustainedFor)
+	}
+
+	// === REPROVISIONER ===
+
+	if prov != nil && cfg.Reprovisioner.Enabled {
+		rc := cfg.Reprovisioner
+
+		initialDelay := rc.InitialRetryDelay.Duration
+		if initialDelay <= 0 {
+			initialDelay = 1 * time.Second
+		}
+		maxDelay := rc.MaxRetryDelay.Duration
+		if maxDelay <= 0 {
+			maxDelay = 30 * time.Second
+		}
+
+		rp := reprovisioner.New(prov, reprovisioner.Config{
+			Failures:          ovr.FailureNotifications(),
+			MaxRetries:        rc.MaxRetries,
+			InitialRetryDelay: initialDelay,
+			MaxRetryDelay:     maxDelay,
+		})
+
+		go rp.Run(ctx)
+		log.Printf("[INFO] reprovisioner enabled: max_retries=%d initial_delay=%s max_delay=%s",
+			rc.MaxRetries, initialDelay, maxDelay)
 	}
 
 	impl := v1.New(&v1.Config{
