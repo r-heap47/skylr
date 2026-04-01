@@ -26,6 +26,26 @@ run: CONFIG ?= config/config.yaml
 run:
 	go run cmd/main.go --config=$(CONFIG)
 
+KIND_CLUSTER ?= skylr
+
+.PHONY: kind-setup
+kind-setup:
+	kind get clusters | grep -q $(KIND_CLUSTER) || kind create cluster --name $(KIND_CLUSTER)
+	cd ../skylr-shard && docker build -t skylr-shard:latest .
+	docker save skylr-shard:latest | docker exec -i $(KIND_CLUSTER)-control-plane ctr -n k8s.io images import -
+	kubectl --context kind-$(KIND_CLUSTER) apply -f ../deploy/k8s-local/rbac.yaml
+	$(MAKE) kind-route
+
+.PHONY: kind-route
+kind-route:
+	@POD_CIDR=$$(kubectl --context kind-$(KIND_CLUSTER) get node $(KIND_CLUSTER)-control-plane -o jsonpath='{.spec.podCIDR}') && \
+	 NODE_IP=$$(docker inspect $(KIND_CLUSTER)-control-plane --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') && \
+	 (ip route show | grep -q "$$POD_CIDR" && echo "route $$POD_CIDR already present" || (echo "adding route $$POD_CIDR via $$NODE_IP" && sudo ip route add "$$POD_CIDR" via "$$NODE_IP"))
+
+.PHONY: run-k8s-local
+run-k8s-local: kind-route
+	go run cmd/main.go --config=config/config.k8s-local.yaml
+
 .PHONY: all
 all: test build lint
 
