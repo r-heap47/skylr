@@ -60,8 +60,8 @@ func TestHandle_HappyPath(t *testing.T) {
 	prov := mocks.NewShardProvisionerMock(mc).
 		DeprovisionMock.Return(nil).
 		ProvisionMock.Set(func(_ context.Context) (string, error) {
-			return "new:5000", nil
-		})
+		return "new:5000", nil
+	})
 
 	failures := make(chan string, 1)
 	rp := New(prov, fastConfig(failures))
@@ -91,8 +91,8 @@ func TestHandle_DeprovisionError_ContinuesProvisioning(t *testing.T) {
 	prov := mocks.NewShardProvisionerMock(mc).
 		DeprovisionMock.Return(errors.New("dead")).
 		ProvisionMock.Set(func(_ context.Context) (string, error) {
-			return "new:5001", nil
-		})
+		return "new:5001", nil
+	})
 
 	failures := make(chan string, 1)
 	rp := New(prov, fastConfig(failures))
@@ -123,12 +123,12 @@ func TestHandle_ProvisionRetries_ThenSucceeds(t *testing.T) {
 	prov := mocks.NewShardProvisionerMock(mc).
 		DeprovisionMock.Return(nil).
 		ProvisionMock.Set(func(_ context.Context) (string, error) {
-			callCount++
-			if callCount < 3 {
-				return "", errors.New("not ready")
-			}
-			return "new:5002", nil
-		})
+		callCount++
+		if callCount < 3 {
+			return "", errors.New("not ready")
+		}
+		return "new:5002", nil
+	})
 
 	failures := make(chan string, 1)
 	cfg := Config{
@@ -248,9 +248,9 @@ func TestRun_MultipleConcurrentFailures(t *testing.T) {
 	prov := mocks.NewShardProvisionerMock(mc).
 		DeprovisionMock.Optional().Return(nil).
 		ProvisionMock.Set(func(_ context.Context) (string, error) {
-			time.Sleep(5 * time.Millisecond)
-			return "new:9000", nil
-		})
+		time.Sleep(5 * time.Millisecond)
+		return "new:9000", nil
+	})
 
 	failures := make(chan string, 3)
 	rp := New(prov, fastConfig(failures))
