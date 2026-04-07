@@ -135,6 +135,15 @@ func Run() error {
 		if ac.Rules.ItemCount.Enabled {
 			rules = append(rules, ascaler.ItemCountRule{Threshold: ac.Rules.ItemCount.Threshold})
 		}
+		if ac.Rules.CPU.Enabled {
+			rules = append(rules, ascaler.CPURule{Threshold: ac.Rules.CPU.Threshold})
+		}
+		if ac.Rules.Memory.Enabled {
+			rules = append(rules, ascaler.MemoryRule{ThresholdBytes: ac.Rules.Memory.ThresholdBytes})
+		}
+		if ac.Rules.Throughput.Enabled {
+			rules = append(rules, &ascaler.ThroughputRule{Threshold: ac.Rules.Throughput.Threshold})
+		}
 
 		sustainedFor := ac.SustainedFor
 		if sustainedFor <= 0 {

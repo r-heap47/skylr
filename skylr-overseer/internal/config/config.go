@@ -100,13 +100,34 @@ type AutoscalerConfig struct {
 
 // AutoscalerRulesConfig holds per-rule configuration.
 type AutoscalerRulesConfig struct {
-	ItemCount ItemCountRuleConfig `yaml:"item_count"`
+	ItemCount  ItemCountRuleConfig  `yaml:"item_count"`
+	CPU        CPURuleConfig        `yaml:"cpu"`
+	Memory     MemoryRuleConfig     `yaml:"memory"`
+	Throughput ThroughputRuleConfig `yaml:"throughput"`
 }
 
 // ItemCountRuleConfig configures the ItemCountRule.
 type ItemCountRuleConfig struct {
 	Enabled   bool   `yaml:"enabled"`
 	Threshold uint64 `yaml:"threshold"`
+}
+
+// CPURuleConfig configures the CPURule.
+type CPURuleConfig struct {
+	Enabled   bool    `yaml:"enabled"`
+	Threshold float64 `yaml:"threshold"` // percent, e.g. 80.0
+}
+
+// MemoryRuleConfig configures the MemoryRule.
+type MemoryRuleConfig struct {
+	Enabled        bool   `yaml:"enabled"`
+	ThresholdBytes uint64 `yaml:"threshold_bytes"`
+}
+
+// ThroughputRuleConfig configures the ThroughputRule.
+type ThroughputRuleConfig struct {
+	Enabled   bool    `yaml:"enabled"`
+	Threshold float64 `yaml:"threshold"` // ops/sec per shard
 }
 
 // GRPCConfig holds the gRPC server host and port.
