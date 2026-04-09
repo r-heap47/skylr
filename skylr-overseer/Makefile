@@ -57,6 +57,11 @@ test:
 build:
 	go build -v ./...
 
+.PHONY: build-bin
+build-bin: pbgen
+	mkdir -p $(LOCAL_BIN)
+	go build -o $(LOCAL_BIN)/skylr-overseer -v ./cmd
+
 .PHONY: format
 format:
 	smartimports -local "gitlab.ozon.ru/ob/marx/"
